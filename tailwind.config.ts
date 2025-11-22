@@ -57,6 +57,26 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        // CBD Flower Cup specific colors
+        forest: {
+          DEFAULT: "hsl(161 72% 14%)",
+          light: "hsl(161 60% 20%)",
+          dark: "hsl(161 80% 10%)",
+        },
+        gold: {
+          DEFAULT: "hsl(43 60% 50%)",
+          light: "hsl(43 70% 60%)",
+          dark: "hsl(43 50% 40%)",
+        },
+        champagne: "hsl(0 0% 97%)",
+      },
+      backgroundImage: {
+        "gradient-premium": "var(--gradient-premium)",
+        "gradient-gold": "var(--gradient-gold)",
+      },
+      boxShadow: {
+        elegant: "var(--shadow-elegant)",
+        gold: "var(--shadow-gold)",
       },
       borderRadius: {
         lg: "var(--radius)",
