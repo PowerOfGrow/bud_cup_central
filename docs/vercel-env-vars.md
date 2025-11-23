@@ -2,36 +2,36 @@
 
 ## Variables requises
 
-Sur Vercel, vous devez créer les variables suivantes **exactement avec ces noms** (en minuscules) :
+Sur Vercel, vous devez créer les variables suivantes **exactement avec ces noms** (en majuscules avec le préfixe `VITE_`) :
 
 ### Variables à créer sur Vercel
 
-1. **`vite_supabase_url`**
+1. **`VITE_SUPABASE_URL`**
    - Valeur : `https://hsrtfgpjmchsgunpynbg.supabase.co`
    - Scope : All Environments
 
-2. **`vite_supabase_publishable_key`**
+2. **`VITE_SUPABASE_PUBLISHABLE_KEY`**
    - Valeur : Votre clé anonyme Supabase (eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...)
    - Scope : All Environments
 
-3. **`vite_viewer_profile_id`**
+3. **`VITE_VIEWER_PROFILE_ID`**
    - Valeur : `f7777777-7777-7777-7777-777777777777`
    - Scope : All Environments
 
-4. **`vite_producer_profile_id`**
+4. **`VITE_PRODUCER_PROFILE_ID`**
    - Valeur : `b2222222-2222-2222-2222-222222222222`
    - Scope : All Environments
 
-5. **`vite_judge_profile_id`**
+5. **`VITE_JUDGE_PROFILE_ID`**
    - Valeur : `d4444444-4444-4444-4444-444444444444`
    - Scope : All Environments
 
 ## ⚠️ Important
 
-- Les noms doivent être **en minuscules** (comme ci-dessus)
-- `vercel.json` les transforme automatiquement en `VITE_...` (majuscules) pour Vite
-- Ne créez **PAS** de variables avec des noms en majuscules comme `VITE_SUPABASE_URL`
-- Supprimez les anciennes variables en majuscules si elles existent
+- Les noms doivent être **en majuscules avec le préfixe `VITE_`** (comme ci-dessus)
+- Vite ne charge automatiquement que les variables qui commencent par `VITE_`
+- `vercel.json` n'a plus besoin de la section `env` - Vercel utilise directement les variables d'environnement
+- Supprimez les anciennes variables en minuscules si elles existent
 
 ## Variables optionnelles (non nécessaires)
 
@@ -42,6 +42,10 @@ Sur Vercel, vous devez créer les variables suivantes **exactement avec ces noms
 
 Après avoir créé/modifié les variables :
 1. Allez dans Vercel → Settings → Environment Variables
-2. Vérifiez que les 5 variables ci-dessus existent (en minuscules)
+2. Vérifiez que les 5 variables ci-dessus existent (en majuscules avec `VITE_`)
 3. Redéployez l'application si nécessaire
+
+## Note
+
+`vercel.json` a été simplifié - la section `env` a été supprimée car Vercel utilise automatiquement les variables d'environnement configurées dans le dashboard.
 

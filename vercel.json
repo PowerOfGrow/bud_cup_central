@@ -16,13 +16,6 @@
       "source": "/(.*)",
       "destination": "/"
     }
-  ],
-  "env": {
-    "VITE_SUPABASE_URL": "@VITE_SUPABASE_URL",
-    "VITE_SUPABASE_PUBLISHABLE_KEY": "@vite_supabase_publishable_key",
-    "VITE_VIEWER_PROFILE_ID": "@vite_viewer_profile_id",
-    "VITE_PRODUCER_PROFILE_ID": "@vite_producer_profile_id",
-    "VITE_JUDGE_PROFILE_ID": "@VITE_JUDGE_PROFILE_ID"
-  }
+  ]
 }
 
