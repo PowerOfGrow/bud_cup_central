@@ -74,7 +74,7 @@ const ViewerPanel = () => {
       <div className="grid gap-4 md:grid-cols-3">
         <StatCard icon={Star} label="Votes déposés" value={data.totalVotes} hint="Participation aux classements" />
         <StatCard icon={Award} label="Note moyenne" value={data.averageScore ? `${data.averageScore}/5` : "—"} hint="Basée sur vos votes" accent="bg-gradient-gold text-foreground" />
-        <StatCard icon={CalendarIcon} label="Concours en cours" value={data.upcomingContests.length} hint="Éditions ouvertes au public" accent="bg-emerald-500/10 text-emerald-500" />
+        <StatCard icon={CalendarIcon} label="Concours en cours" value={data.upcomingContests.length} hint="Éditions ouvertes au public" accent="bg-accent/10 text-accent" />
       </div>
 
       <SectionWrapper title="Vos derniers votes" description="Historique des variétés que vous avez notées récemment.">
@@ -159,9 +159,9 @@ const ProducerPanel = () => {
   return (
     <div className="space-y-10">
       <div className="grid gap-4 md:grid-cols-4">
-        <StatCard icon={Leaf} label="Entrées totales" value={data.totals.totalEntries} hint="Toutes éditions confondues" accent="bg-emerald-500/10 text-emerald-500" />
-        <StatCard icon={CheckCircle2} label="Entrées approuvées" value={data.totals.approved} hint="Prêtes pour le jury" accent="bg-emerald-700/10 text-emerald-700" />
-        <StatCard icon={Shield} label="Dossiers en revue" value={data.totals.submitted} hint="Soumises / en validation" accent="bg-amber-500/10 text-amber-500" />
+        <StatCard icon={Leaf} label="Entrées totales" value={data.totals.totalEntries} hint="Toutes éditions confondues" accent="bg-accent/10 text-accent" />
+        <StatCard icon={CheckCircle2} label="Entrées approuvées" value={data.totals.approved} hint="Prêtes pour le jury" accent="bg-accent/20 text-accent" />
+        <StatCard icon={Shield} label="Dossiers en revue" value={data.totals.submitted} hint="Soumises / en validation" accent="bg-secondary/20 text-secondary-foreground" />
         <StatCard icon={Star} label="Note moyenne jury" value={data.overallAverage ? `${data.overallAverage}/100` : "—"} hint="Basée sur vos fiches récentes" />
       </div>
 
@@ -252,7 +252,7 @@ const JudgePanel = () => {
   return (
     <div className="space-y-10">
       <div className="grid gap-4 md:grid-cols-3">
-        <StatCard icon={Users} label="Concours assignés" value={data.assignments.length} hint="Éditions où vous êtes juré" accent="bg-blue-500/10 text-blue-500" />
+        <StatCard icon={Users} label="Concours assignés" value={data.assignments.length} hint="Éditions où vous êtes juré" accent="bg-accent/10 text-accent" />
         <StatCard icon={Award} label="Fiches notées" value={data.stats.totalReviews} hint="Sur les 30 derniers jours" accent="bg-accent/10 text-accent" />
         <StatCard icon={Star} label="Score moyen" value={data.stats.averageScore ? `${data.stats.averageScore}/100` : "—"} hint="Moyenne de vos évaluations" />
       </div>

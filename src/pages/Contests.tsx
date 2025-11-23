@@ -13,9 +13,9 @@ const statusLabel: Record<string, string> = {
 };
 
 const statusTone: Record<string, string> = {
-  registration: "bg-emerald-500/10 text-emerald-500",
-  judging: "bg-amber-500/10 text-amber-500",
-  completed: "bg-blue-500/10 text-blue-500",
+  registration: "bg-accent/10 text-accent dark:bg-accent/20",
+  judging: "bg-secondary/20 text-secondary-foreground",
+  completed: "bg-primary/10 text-primary dark:bg-primary/20",
   archived: "bg-muted text-muted-foreground",
 };
 
