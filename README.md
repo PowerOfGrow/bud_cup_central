@@ -76,6 +76,8 @@ Les règles RLS de base sont en place (lecture publique des données approuvées
 - `src/integrations/supabase` : client + types générés  
 - `supabase/config.toml` : configuration CLI pointant sur `hsrtfgpjmchsgunpynbg`
 - `supabase/migrations` & `supabase/seed.sql` : schéma versionné + données d’exemple
+- `supabase/functions/*` : Edge Functions (voir `docs/edge-functions.md`)
+- `docs/env-setup.md` : configuration des variables d’environnement
 
 ## Prochaines étapes
 - Remplir `.env` avec les clés Supabase réelles  
