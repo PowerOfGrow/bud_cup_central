@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Award, TrendingUp, Users } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const Hero = () => {
   return (
@@ -37,17 +38,21 @@ const Hero = () => {
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16 animate-fade-in delay-700">
             <Button 
               size="lg" 
+              asChild
               className="bg-gradient-gold shadow-gold hover:shadow-elegant transition-all duration-300 text-lg px-8 py-6 hover:scale-105 group"
             >
-              <Award className="h-5 w-5 mr-2 group-hover:rotate-12 transition-transform duration-300" />
-              Participer au Concours
+              <Link to="/register">
+                <Award className="h-5 w-5 mr-2 group-hover:rotate-12 transition-transform duration-300" />
+                Participer au Concours
+              </Link>
             </Button>
             <Button 
               size="lg" 
               variant="outline" 
+              asChild
               className="border-accent text-primary-foreground hover:bg-accent/10 text-lg px-8 py-6 hover:scale-105 transition-all duration-300"
             >
-              Voir les Concours
+              <Link to="/contests">Voir les Concours</Link>
             </Button>
           </div>
 

@@ -57,11 +57,11 @@ const Header = () => {
                 )}
               </Button>
             )}
-            <Button variant="outline" className="border-accent text-accent hover:bg-accent hover:text-accent-foreground transition-all duration-300 hover:scale-105">
-              Connexion
+            <Button variant="outline" asChild className="border-accent text-accent hover:bg-accent hover:text-accent-foreground transition-all duration-300 hover:scale-105">
+              <Link to="/login">Connexion</Link>
             </Button>
-            <Button className="bg-gradient-gold shadow-gold hover:shadow-elegant transition-all duration-300 hover:scale-105">
-              S'inscrire
+            <Button asChild className="bg-gradient-gold shadow-gold hover:shadow-elegant transition-all duration-300 hover:scale-105">
+              <Link to="/register">S'inscrire</Link>
             </Button>
           </div>
 
@@ -110,11 +110,11 @@ const Header = () => {
                     {theme === "dark" ? "Mode Clair" : "Mode Sombre"}
                   </Button>
                 )}
-                <Button variant="outline" className="w-full border-accent text-accent">
-                  Connexion
+                <Button variant="outline" asChild className="w-full border-accent text-accent">
+                  <Link to="/login" onClick={() => setMobileMenuOpen(false)}>Connexion</Link>
                 </Button>
-                <Button className="w-full bg-gradient-gold">
-                  S'inscrire
+                <Button asChild className="w-full bg-gradient-gold">
+                  <Link to="/register" onClick={() => setMobileMenuOpen(false)}>S'inscrire</Link>
                 </Button>
               </div>
             </nav>
