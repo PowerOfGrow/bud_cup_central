@@ -1,73 +1,86 @@
-# Welcome to your Lovable project
+# CBD Flower Cup – Plateforme Concours
 
-## Project info
+Application React (Vite + TypeScript) dédiée à la gestion des concours “CBD Flower Cup”.
 
-**URL**: https://lovable.dev/projects/3fe98578-d859-447c-aa58-676718799579
+## Pile technique
+- Vite + React 18 + TypeScript  
+- Tailwind CSS + shadcn/ui  
+- Supabase (auth, base de données, stockage)  
+- React Router, React Query (prévu)
 
-## How can I edit this code?
+## Prérequis
+- Node.js ≥ 18.18  
+- npm 9+ (ou Bun si vous préférez, mais le lock officiel est `package-lock.json`)  
+- Compte Supabase avec accès au projet `hsrtfgpjmchsgunpynbg`
 
-There are several ways of editing your application.
-
-**Use Lovable**
-
-Simply visit the [Lovable Project](https://lovable.dev/projects/3fe98578-d859-447c-aa58-676718799579) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+## Installation locale
+```bash
+git clone <votre-url>
+cd bud-cup-central
+npm install
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+## Variables d’environnement
+Créer un fichier `.env` à la racine :
+```
+VITE_SUPABASE_URL=https://hsrtfgpjmchsgunpynbg.supabase.co
+VITE_SUPABASE_PUBLISHABLE_KEY=<clé anonyme ou service key restreinte>
+VITE_VIEWER_PROFILE_ID=f7777777-7777-7777-7777-777777777777
+VITE_PRODUCER_PROFILE_ID=b2222222-2222-2222-2222-222222222222
+VITE_JUDGE_PROFILE_ID=d4444444-4444-4444-4444-444444444444
+```
+> ⚠️ Sans ces variables, le client Supabase ne sera pas initialisé (erreur explicite côté runtime).
+> Les IDs de profil sont optionnels : s'ils sont renseignés, les nouveaux dashboards utiliseront vos propres comptes.
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## Migration Supabase
+1. Installer le CLI si besoin : `npm install -g supabase`  
+2. Lier le projet :
+   ```bash
+   supabase link --project-ref hsrtfgpjmchsgunpynbg
+   ```
+3. Appliquer les migrations SQL versionnées (ex: `supabase/migrations/20241123150000_initial_schema.sql`) :
+   ```bash
+   supabase db push    # ou supabase db reset pour un nouveau projet
+   ```
+4. (Optionnel) injecter les données d’exemple `supabase/seed.sql` :
+   ```bash
+   supabase db remote commit --file supabase/seed.sql
+   # ou supabase db reset --seed supabase/seed.sql en local
+   ```
+5. Générer les types TypeScript chaque fois que le schéma évolue :
+   ```bash
+   supabase gen types typescript --project-id hsrtfgpjmchsgunpynbg --schema public > src/integrations/supabase/types.ts
+   ```
+   (Nécessite un `SUPABASE_ACCESS_TOKEN` avec accès au projet.)
 
-**Use GitHub Codespaces**
+### Tables principales
+- `profiles` : miroir de `auth.users` avec rôle (`organizer`, `producer`, `judge`, `viewer`)  
+- `contests` : métadonnées d’un concours (statut, dates, règlement, visuel)  
+- `entries` + `entry_documents` + `entry_badges` : candidatures, pièces jointes, trophées  
+- `contest_judges` : assignations des juges par concours  
+- `judge_scores` et `public_votes` : notations expertes + votes communautaires
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+Les règles RLS de base sont en place (lecture publique des données approuvées, modifications réservées aux producteurs/juges/organisateurs). Adaptez-les selon vos flux métier.
 
-## What technologies are used for this project?
+## Scripts npm
+- `npm run dev` : serveur de développement Vite  
+- `npm run build` : build production  
+- `npm run preview` : prévisualisation du build  
+- `npm run lint` : ESLint
 
-This project is built with:
+## Structure rapide
+- `src/pages` : pages React (Index, NotFound…)  
+- `src/pages/Dashboard.tsx` : tableaux de bord Viewer/Producteur/Jury connectés à Supabase  
+- `src/components` : UI et sections marketing  
+- `src/integrations/supabase` : client + types générés  
+- `supabase/config.toml` : configuration CLI pointant sur `hsrtfgpjmchsgunpynbg`
+- `supabase/migrations` & `supabase/seed.sql` : schéma versionné + données d’exemple
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+## Prochaines étapes
+- Remplir `.env` avec les clés Supabase réelles  
+- Mettre en place React Query + `QueryClientProvider` pour consommer les tables  
+- Définir le schéma (Concours, Entrées, Votes, Jurés) et regénérer `types.ts`  
+- Ajouter des tests et CI
 
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/3fe98578-d859-447c-aa58-676718799579) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+Bonne contribution !
