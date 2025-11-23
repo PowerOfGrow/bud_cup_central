@@ -17,9 +17,22 @@ const Register = () => {
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!email || !password || !displayName) {
+      toast.error("Veuillez remplir tous les champs");
+      return;
+    }
+
+    if (password.length < 6) {
+      toast.error("Le mot de passe doit contenir au moins 6 caractères");
+      return;
+    }
+
     setLoading(true);
 
     try {
+      console.log("Tentative d'inscription pour:", email);
+      
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -27,15 +40,26 @@ const Register = () => {
           data: {
             display_name: displayName,
           },
+          emailRedirectTo: `${window.location.origin}/dashboard`,
         },
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Erreur Supabase:", error);
+        throw error;
+      }
 
-      toast.success("Inscription réussie ! Vérifiez votre email.");
-      navigate("/login");
+      console.log("Inscription réussie:", data);
+      toast.success("Inscription réussie ! Vérifiez votre email pour confirmer votre compte.");
+      
+      // Attendre un peu avant de rediriger pour que l'utilisateur voie le message
+      setTimeout(() => {
+        navigate("/login");
+      }, 2000);
     } catch (error: any) {
-      toast.error(error.message || "Erreur lors de l'inscription");
+      console.error("Erreur lors de l'inscription:", error);
+      const errorMessage = error?.message || "Erreur lors de l'inscription. Vérifiez vos informations.";
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -89,8 +113,12 @@ const Register = () => {
                       minLength={6}
                     />
                   </div>
-                  <Button type="submit" className="w-full" disabled={loading}>
-                    {loading ? "Inscription..." : "S'inscrire"}
+                  <Button 
+                    type="submit" 
+                    className="w-full" 
+                    disabled={loading || !email || !password || !displayName}
+                  >
+                    {loading ? "Inscription en cours..." : "S'inscrire"}
                   </Button>
                 </form>
                 <div className="mt-4 text-center text-sm text-muted-foreground">

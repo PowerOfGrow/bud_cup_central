@@ -74,10 +74,10 @@ Les règles RLS de base sont en place (lecture publique des données approuvées
 - `src/pages/Dashboard.tsx` : tableaux de bord Viewer/Producteur/Jury connectés à Supabase  
 - `src/components` : UI et sections marketing  
 - `src/integrations/supabase` : client + types générés  
-- `supabase/config.toml` : configuration CLI pointant sur `hsrtfgpjmchsgunpynbg`
-- `supabase/migrations` & `supabase/seed.sql` : schéma versionné + données d’exemple
-- `supabase/functions/*` : Edge Functions (voir `docs/edge-functions.md`)
-- `docs/env-setup.md` : configuration des variables d’environnement
+- `supabase/config.toml` : configuration CLI pointant sur `hsrtfgpjmchsgunpynbg`
+- `supabase/migrations` & `supabase/seed.sql` : schéma versionné + données d'exemple
+- `supabase/functions/*` : Edge Functions (voir `docs/edge-functions.md`)
+- `scripts/supabase-setup.ps1` : script PowerShell pour automatiser migrations et seed
 
 ## Prochaines étapes
 - Remplir `.env` avec les clés Supabase réelles  
