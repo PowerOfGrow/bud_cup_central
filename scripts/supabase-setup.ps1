@@ -3,7 +3,9 @@ param(
   [string]$SeedFile = "supabase/seed.sql",
   [switch]$SkipSeed,
   [switch]$SkipTypes,
-  [string]$AccessToken
+  [switch]$SkipSecrets,
+  [string]$AccessToken,
+  [string]$ServiceRoleKey
 )
 
 $ErrorActionPreference = "Stop"
@@ -45,12 +47,32 @@ Invoke-Step -Message "Lien avec le projet Supabase ($ProjectRef)" -Action {
   supabase link --project-ref $ProjectRef
 }
 
-# 2. Appliquer migrations
+# 2. Configurer les secrets pour les Edge Functions
+if (-not $SkipSecrets) {
+  $supabaseUrl = "https://$ProjectRef.supabase.co"
+  
+  Invoke-Step -Message "Configuration des secrets Supabase pour les Edge Functions" -Action {
+    Write-Host "  Configuration de SUPABASE_URL..." -ForegroundColor Gray
+    supabase secrets set SUPABASE_URL=$supabaseUrl --project-ref $ProjectRef
+    
+    if ($ServiceRoleKey) {
+      Write-Host "  Configuration de SUPABASE_SERVICE_ROLE_KEY..." -ForegroundColor Gray
+      supabase secrets set SUPABASE_SERVICE_ROLE_KEY=$ServiceRoleKey --project-ref $ProjectRef
+      Write-Host "  ✅ Secrets configurés." -ForegroundColor Green
+    } else {
+      Write-Host "  ⚠️  SUPABASE_SERVICE_ROLE_KEY non fournie. Configure-la manuellement avec :" -ForegroundColor Yellow
+      Write-Host "     supabase secrets set SUPABASE_SERVICE_ROLE_KEY=<votre-key> --project-ref $ProjectRef" -ForegroundColor Yellow
+      Write-Host "     (Trouve la clé dans Supabase Dashboard → Settings → API → service_role key)" -ForegroundColor Yellow
+    }
+  }
+}
+
+# 3. Appliquer migrations
 Invoke-Step -Message "Application des migrations SQL" -Action {
   supabase db push
 }
 
-# 3. Seed facultatif
+# 4. Seed facultatif
 if (-not $SkipSeed) {
   if (-not (Test-Path $SeedFile)) {
     Write-Error "Seed file introuvable: $SeedFile (utilise --SeedFile pour ajuster ou --SkipSeed)."
@@ -61,7 +83,7 @@ if (-not $SkipSeed) {
   }
 }
 
-# 4. Génération des types TypeScript
+# 5. Génération des types TypeScript
 if (-not $SkipTypes) {
   $typesOutput = "src/integrations/supabase/types.ts"
   Invoke-Step -Message "Génération des types TypeScript -> $typesOutput" -Action {
