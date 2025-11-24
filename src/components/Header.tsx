@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Award, Menu, X, Moon, Sun, User, LogOut, Heart } from "lucide-react";
+import { Award, Menu, X, Moon, Sun, User, LogOut, Heart, Search } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useTheme } from "next-themes";
@@ -61,6 +61,11 @@ const Header = () => {
 
           {/* CTA Buttons */}
           <div className="hidden md:flex items-center gap-4">
+            <Button variant="ghost" size="icon" asChild>
+              <Link to="/search">
+                <Search className="h-5 w-5" />
+              </Link>
+            </Button>
             {mounted && (
               <Button
                 variant="ghost"

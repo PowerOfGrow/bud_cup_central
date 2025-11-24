@@ -76,7 +76,7 @@
 - [x] Recherche globale (entrées par nom, producteur, terpènes)
 - [x] Filtres avancés (catégorie)
 - [x] Tri dynamique (nom, score jury, vote public)
-- [ ] Recherche globale étendue (concours, producteurs)
+- [x] Recherche globale étendue (concours, producteurs)
 
 ### 4.2 Notifications
 - [x] Système de notifications in-app
