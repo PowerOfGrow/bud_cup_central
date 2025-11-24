@@ -61,13 +61,15 @@ export function useAuth() {
           const displayName = user.user_metadata?.display_name || 
                              user.email?.split("@")[0] || 
                              "Utilisateur";
+          // Récupérer le rôle depuis les metadata, sinon utiliser "viewer" par défaut
+          const role = user.user_metadata?.role || "viewer";
           
           const { data: newProfile, error: createError } = await supabase
             .from("profiles")
             .insert({
               id: user.id,
               display_name: displayName,
-              role: "viewer",
+              role: role as "viewer" | "producer" | "judge" | "organizer",
             })
             .select()
             .single();

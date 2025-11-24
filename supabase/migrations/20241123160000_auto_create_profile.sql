@@ -6,6 +6,7 @@ security definer set search_path = public
 as $$
 declare
   display_name_value text;
+  role_value profile_role;
 begin
   -- Récupérer le display_name depuis les metadata de l'utilisateur
   display_name_value := coalesce(
@@ -13,12 +14,18 @@ begin
     split_part(new.email, '@', 1)
   );
 
+  -- Récupérer le rôle depuis les metadata, sinon utiliser 'viewer' par défaut
+  role_value := coalesce(
+    (new.raw_user_meta_data->>'role')::profile_role,
+    'viewer'::profile_role
+  );
+
   -- Créer le profil dans la table profiles
   insert into public.profiles (id, display_name, role)
   values (
     new.id,
     display_name_value,
-    'viewer'::profile_role
+    role_value
   )
   on conflict (id) do nothing;
 

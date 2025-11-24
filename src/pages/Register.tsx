@@ -4,15 +4,19 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import Header from "@/components/Header";
 import { useAuth } from "@/hooks/use-auth";
 
+type UserRole = "viewer" | "producer" | "judge" | "organizer";
+
 const Register = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
+  const [role, setRole] = useState<UserRole>("viewer");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { user, profile, loading: authLoading } = useAuth();
@@ -40,7 +44,7 @@ const Register = () => {
     setLoading(true);
 
     try {
-      console.log("Tentative d'inscription pour:", email);
+      console.log("Tentative d'inscription pour:", email, "avec le rôle:", role);
       
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -48,6 +52,7 @@ const Register = () => {
         options: {
           data: {
             display_name: displayName,
+            role: role,
           },
           emailRedirectTo: `${window.location.origin}/dashboard`,
         },
@@ -141,6 +146,26 @@ const Register = () => {
                       required
                       minLength={6}
                     />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="role">Type de compte</Label>
+                    <Select value={role} onValueChange={(value) => setRole(value as UserRole)}>
+                      <SelectTrigger id="role">
+                        <SelectValue placeholder="Sélectionnez votre type de compte" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="viewer">Membre gratuit</SelectItem>
+                        <SelectItem value="producer">Producteur</SelectItem>
+                        <SelectItem value="judge">Juge</SelectItem>
+                        <SelectItem value="organizer">Organisateur</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">
+                      {role === "viewer" && "Accès gratuit pour voter et découvrir les concours"}
+                      {role === "producer" && "Soumettez vos fleurs CBD aux concours"}
+                      {role === "judge" && "Évaluez les entrées en tant qu'expert"}
+                      {role === "organizer" && "Créez et gérez des concours"}
+                    </p>
                   </div>
                   <Button 
                     type="submit" 
