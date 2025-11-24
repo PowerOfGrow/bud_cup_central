@@ -17,7 +17,9 @@ Bienvenue dans la documentation du projet CBD Flower Cup. Cette documentation es
 - **[Secrets Supabase](./supabase-secrets.md)** - Gestion des secrets et clés API Supabase
 - **[Configuration Resend](./RESEND_SETUP.md)** - Guide de configuration de l'API Resend pour les emails
 - **[Tests](./TESTING.md)** - Guide de tests unitaires avec Vitest
+- **[Tests E2E](./E2E_TESTING.md)** - Guide des tests end-to-end avec Playwright
 - **[CI/CD](./CI_CD.md)** - Configuration et utilisation des workflows GitHub Actions
+- **[Monitoring](./MONITORING.md)** - Configuration Sentry pour le logging des erreurs
 
 ## 🚀 Démarrage Rapide
 

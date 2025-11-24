@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { SkipLink } from "./components/SkipLink";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 
 // Lazy load pages for code splitting
 const Index = lazy(() => import("./pages/Index"));
@@ -36,13 +37,14 @@ const PageLoader = () => (
 );
 
 const App = () => (
-  <TooltipProvider>
-    <Toaster />
-    <Sonner />
-    <BrowserRouter>
-      <SkipLink />
-      <Suspense fallback={<PageLoader />}>
-        <Routes>
+  <ErrorBoundary>
+    <TooltipProvider>
+      <Toaster />
+      <Sonner />
+      <BrowserRouter>
+        <SkipLink />
+        <Suspense fallback={<PageLoader />}>
+          <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/contests" element={<Contests />} />
           <Route
@@ -111,10 +113,11 @@ const App = () => (
           />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
-        </Routes>
-      </Suspense>
-    </BrowserRouter>
-  </TooltipProvider>
+          </Routes>
+        </Suspense>
+      </BrowserRouter>
+    </TooltipProvider>
+  </ErrorBoundary>
 );
 
 export default App;
