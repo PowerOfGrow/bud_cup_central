@@ -87,7 +87,7 @@
 - [x] Tableau de bord analytics pour organisateurs
 - [x] Statistiques détaillées (participation, engagement)
 - [x] Export de données (CSV)
-- [ ] Export PDF
+- [x] Export PDF
 
 ### 4.4 Social Features
 - [x] Partage sur réseaux sociaux

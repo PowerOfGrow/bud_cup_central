@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useViewerDashboard, useProducerDashboard, useJudgeDashboard } from "@/hooks/use-dashboard";
-import { Award, CheckCircle2, Clock3, Eye, Leaf, Scale, Shield, Star, Users, BarChart3, Download, TrendingUp } from "lucide-react";
+import { Award, CheckCircle2, Clock3, Eye, Leaf, Scale, Shield, Star, Users, BarChart3, Download, TrendingUp, FileText } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { LoadingState } from "@/components/LoadingState";
 import { ErrorState } from "@/components/ErrorState";
@@ -18,6 +18,8 @@ import { toast } from "sonner";
 import { useConfirm } from "@/hooks/use-confirm";
 import { useOrganizerAnalytics } from "@/hooks/use-organizer-analytics";
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 
 const StatCard = ({
@@ -520,6 +522,167 @@ const OrganizerPanel = () => {
     document.body.removeChild(link);
   };
 
+  const exportToPDF = () => {
+    if (!data) return;
+
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    let yPosition = 20;
+
+    // Titre
+    doc.setFontSize(20);
+    doc.setFont("helvetica", "bold");
+    doc.text("Rapport Analytics - CBD Flower Cup", pageWidth / 2, yPosition, { align: "center" });
+    yPosition += 10;
+
+    // Date
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    const dateStr = new Date().toLocaleDateString("fr-FR", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+    doc.text(`Généré le ${dateStr}`, pageWidth / 2, yPosition, { align: "center" });
+    yPosition += 15;
+
+    // Statistiques Globales
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "bold");
+    doc.text("Statistiques Globales", 14, yPosition);
+    yPosition += 8;
+
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    const globalStats = [
+      ["Total Concours", data.totalContests.toString()],
+      ["Concours Actifs", data.activeContests.toString()],
+      ["Total Entrées", data.totalEntries.toString()],
+      ["Total Producteurs", data.totalProducers.toString()],
+      ["Total Juges", data.totalJudges.toString()],
+      ["Total Votes", data.totalVotes.toString()],
+    ];
+
+    autoTable(doc, {
+      startY: yPosition,
+      head: [["Métrique", "Valeur"]],
+      body: globalStats,
+      theme: "striped",
+      headStyles: { fillColor: [44, 62, 80] },
+      styles: { fontSize: 9 },
+      margin: { left: 14, right: 14 },
+    });
+
+    yPosition = (doc as any).lastAutoTable.finalY + 15;
+
+    // Participation
+    if (yPosition > pageHeight - 40) {
+      doc.addPage();
+      yPosition = 20;
+    }
+
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "bold");
+    doc.text("Participation", 14, yPosition);
+    yPosition += 8;
+
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    const participationStats = [
+      ["Producteurs Actifs", data.participation.activeProducers.toString()],
+      ["Votants Actifs", data.participation.activeVoters.toString()],
+      ["Total Producteurs", data.participation.totalProducers.toString()],
+      ["Total Viewers", data.participation.totalViewers.toString()],
+    ];
+
+    autoTable(doc, {
+      startY: yPosition,
+      head: [["Métrique", "Valeur"]],
+      body: participationStats,
+      theme: "striped",
+      headStyles: { fillColor: [44, 62, 80] },
+      styles: { fontSize: 9 },
+      margin: { left: 14, right: 14 },
+    });
+
+    yPosition = (doc as any).lastAutoTable.finalY + 15;
+
+    // Engagement
+    if (yPosition > pageHeight - 40) {
+      doc.addPage();
+      yPosition = 20;
+    }
+
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "bold");
+    doc.text("Engagement", 14, yPosition);
+    yPosition += 8;
+
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    const engagementStats = [
+      ["Votes moyens par entrée", data.engagement.averageVotesPerEntry.toString()],
+      ["Scores moyens par entrée", data.engagement.averageScoresPerEntry.toString()],
+      ["Taux de complétion", `${data.engagement.completionRate}%`],
+    ];
+
+    autoTable(doc, {
+      startY: yPosition,
+      head: [["Métrique", "Valeur"]],
+      body: engagementStats,
+      theme: "striped",
+      headStyles: { fillColor: [44, 62, 80] },
+      styles: { fontSize: 9 },
+      margin: { left: 14, right: 14 },
+    });
+
+    yPosition = (doc as any).lastAutoTable.finalY + 15;
+
+    // Statistiques par Concours
+    if (yPosition > pageHeight - 60) {
+      doc.addPage();
+      yPosition = 20;
+    }
+
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "bold");
+    doc.text("Statistiques par Concours", 14, yPosition);
+    yPosition += 8;
+
+    const contestsTableData = data.contestsStats.map((contest) => [
+      contest.name.length > 30 ? contest.name.substring(0, 30) + "..." : contest.name,
+      contest.status,
+      contest.entriesCount.toString(),
+      contest.votesCount.toString(),
+      contest.judgesCount.toString(),
+      contest.averageScore ? contest.averageScore.toString() : "N/A",
+    ]);
+
+    autoTable(doc, {
+      startY: yPosition,
+      head: [["Nom", "Statut", "Entrées", "Votes", "Juges", "Score Moyen"]],
+      body: contestsTableData,
+      theme: "striped",
+      headStyles: { fillColor: [44, 62, 80] },
+      styles: { fontSize: 8 },
+      margin: { left: 14, right: 14 },
+      columnStyles: {
+        0: { cellWidth: 60 },
+        1: { cellWidth: 30 },
+        2: { cellWidth: 20 },
+        3: { cellWidth: 20 },
+        4: { cellWidth: 20 },
+        5: { cellWidth: 25 },
+      },
+    });
+
+    // Sauvegarder le PDF
+    const fileName = `analytics-${new Date().toISOString().split("T")[0]}.pdf`;
+    doc.save(fileName);
+    toast.success("PDF généré avec succès !");
+  };
+
   if (isLoading) {
     return <LoadingState message="Chargement des analytics…" />;
   }
@@ -599,16 +762,22 @@ const OrganizerPanel = () => {
       {/* Graphique d'évolution temporelle */}
       <Card className="border-border/70">
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>Évolution (30 derniers jours)</CardTitle>
-              <CardDescription>Activité quotidienne sur la plateforme</CardDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>Évolution (30 derniers jours)</CardTitle>
+                <CardDescription>Activité quotidienne sur la plateforme</CardDescription>
+              </div>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={exportToCSV}>
+                  <Download className="mr-2 h-4 w-4" />
+                  CSV
+                </Button>
+                <Button variant="outline" size="sm" onClick={exportToPDF}>
+                  <FileText className="mr-2 h-4 w-4" />
+                  PDF
+                </Button>
+              </div>
             </div>
-            <Button variant="outline" size="sm" onClick={exportToCSV}>
-              <Download className="mr-2 h-4 w-4" />
-              Exporter CSV
-            </Button>
-          </div>
         </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={300}>
