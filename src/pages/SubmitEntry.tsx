@@ -33,6 +33,7 @@ import Header from "@/components/Header";
 import { LoadingState } from "@/components/LoadingState";
 import { ErrorState } from "@/components/ErrorState";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { useFileUpload } from "@/hooks/use-file-upload";
 
 const entrySchema = z.object({
   contest_id: z.string().uuid("Sélectionnez un concours"),
@@ -125,24 +126,39 @@ const SubmitEntry = () => {
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [coaFile, setCoaFile] = useState<File | null>(null);
 
+  // Hooks pour l'upload de fichiers
+  const { uploadFile: uploadPhoto, uploading: uploadingPhoto } = useFileUpload({
+    bucket: "entry-photos",
+  });
+
+  const { uploadFile: uploadDocument, uploading: uploadingDocument } = useFileUpload({
+    bucket: "entry-documents",
+  });
+
   const createEntryMutation = useMutation({
     mutationFn: async (data: EntryFormValues) => {
       if (!user?.id || !profile) throw new Error("Utilisateur non authentifié");
 
-      // Upload photo si présente (simplifié - à améliorer avec buckets Supabase configurés)
+      // Upload photo si présente
       let photoUrl: string | null = existingEntry?.photo_url || null;
       if (photoFile) {
-        // TODO: Implémenter upload vers Supabase Storage une fois les buckets configurés
-        // Pour l'instant, on stocke juste le nom du fichier
-        photoUrl = `pending-upload-${photoFile.name}`;
+        const uploadedUrl = await uploadPhoto(photoFile, `entries/${user.id}`);
+        if (uploadedUrl) {
+          photoUrl = uploadedUrl;
+        } else {
+          throw new Error("Erreur lors de l'upload de la photo");
+        }
       }
 
-      // Upload COA si présent (simplifié - à améliorer avec buckets Supabase configurés)
+      // Upload COA si présent
       let coaUrl: string | null = existingEntry?.coa_url || null;
       if (coaFile) {
-        // TODO: Implémenter upload vers Supabase Storage une fois les buckets configurés
-        // Pour l'instant, on stocke juste le nom du fichier
-        coaUrl = `pending-upload-${coaFile.name}`;
+        const uploadedUrl = await uploadDocument(coaFile, `entries/${user.id}`);
+        if (uploadedUrl) {
+          coaUrl = uploadedUrl;
+        } else {
+          throw new Error("Erreur lors de l'upload du document COA");
+        }
       }
 
       // Données de l'entrée
@@ -453,51 +469,86 @@ const SubmitEntry = () => {
                   <div className="space-y-4">
                     <div>
                       <Label>Photo de la variété</Label>
-                      <div className="mt-2 flex items-center gap-4">
-                        <Input
-                          type="file"
-                          accept="image/*"
-                          onChange={(e) => setPhotoFile(e.target.files?.[0] || null)}
-                          className="cursor-pointer"
-                        />
-                        {photoFile && (
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm text-muted-foreground">{photoFile.name}</span>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => setPhotoFile(null)}
-                            >
-                              <X className="h-4 w-4" />
-                            </Button>
+                      <div className="mt-2 space-y-2">
+                        {existingEntry?.photo_url && !photoFile && (
+                          <div className="relative w-32 h-32 rounded-lg overflow-hidden border">
+                            <img
+                              src={existingEntry.photo_url}
+                              alt="Photo actuelle"
+                              className="w-full h-full object-cover"
+                            />
                           </div>
                         )}
+                        <div className="flex items-center gap-4">
+                          <Input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => setPhotoFile(e.target.files?.[0] || null)}
+                            className="cursor-pointer"
+                            disabled={uploadingPhoto}
+                          />
+                          {photoFile && (
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm text-muted-foreground">{photoFile.name}</span>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setPhotoFile(null)}
+                                disabled={uploadingPhoto}
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          )}
+                          {uploadingPhoto && (
+                            <span className="text-sm text-muted-foreground">Upload en cours...</span>
+                          )}
+                        </div>
                       </div>
                     </div>
 
                     <div>
                       <Label>Certificat d'analyse (COA)</Label>
-                      <div className="mt-2 flex items-center gap-4">
-                        <Input
-                          type="file"
-                          accept=".pdf,.jpg,.jpeg,.png"
-                          onChange={(e) => setCoaFile(e.target.files?.[0] || null)}
-                          className="cursor-pointer"
-                        />
-                        {coaFile && (
+                      <div className="mt-2 space-y-2">
+                        {existingEntry?.coa_url && !coaFile && (
                           <div className="flex items-center gap-2">
-                            <span className="text-sm text-muted-foreground">{coaFile.name}</span>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => setCoaFile(null)}
+                            <a
+                              href={existingEntry.coa_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-sm text-accent hover:underline"
                             >
-                              <X className="h-4 w-4" />
-                            </Button>
+                              Voir le document actuel
+                            </a>
                           </div>
                         )}
+                        <div className="flex items-center gap-4">
+                          <Input
+                            type="file"
+                            accept=".pdf,.jpg,.jpeg,.png"
+                            onChange={(e) => setCoaFile(e.target.files?.[0] || null)}
+                            className="cursor-pointer"
+                            disabled={uploadingDocument}
+                          />
+                          {coaFile && (
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm text-muted-foreground">{coaFile.name}</span>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setCoaFile(null)}
+                                disabled={uploadingDocument}
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          )}
+                          {uploadingDocument && (
+                            <span className="text-sm text-muted-foreground">Upload en cours...</span>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -530,15 +581,17 @@ const SubmitEntry = () => {
                     </Button>
                     <Button
                       type="submit"
-                      disabled={createEntryMutation.isPending}
+                      disabled={createEntryMutation.isPending || uploadingPhoto || uploadingDocument}
                     >
-                      {createEntryMutation.isPending
-                        ? editEntryId
-                          ? "Mise à jour..."
-                          : "Création..."
-                        : editEntryId
-                          ? "Mettre à jour l'entrée"
-                          : "Créer l'entrée (brouillon)"}
+                      {uploadingPhoto || uploadingDocument
+                        ? "Upload en cours..."
+                        : createEntryMutation.isPending
+                          ? editEntryId
+                            ? "Mise à jour..."
+                            : "Création..."
+                          : editEntryId
+                            ? "Mettre à jour l'entrée"
+                            : "Créer l'entrée (brouillon)"}
                     </Button>
                   </div>
                 </form>
