@@ -102,7 +102,7 @@
 ### 5.1 Tests
 - [x] Tests unitaires (Vitest) - Configuration et premiers tests (hooks, composants)
 - [ ] Tests d'intégration
-- [ ] Tests E2E (Playwright)
+- [x] Tests E2E (Playwright)
 
 ### 5.2 CI/CD
 - [x] Pipeline GitHub Actions
@@ -111,7 +111,7 @@
 - [ ] Déploiement automatique staging
 
 ### 5.3 Monitoring
-- [ ] Logging des erreurs (Sentry)
+- [x] Logging des erreurs (Sentry)
 - [ ] Analytics (Google Analytics ou Plausible)
 - [ ] Monitoring des performances (Vercel Analytics)
 
