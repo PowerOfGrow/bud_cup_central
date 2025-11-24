@@ -33,8 +33,9 @@ Vous devez choisir un service d'email pour envoyer les emails. Options recommand
 2. Obtenir votre API Key
 3. Ajouter le secret dans Supabase :
    ```bash
-   supabase secrets set RESEND_API_KEY=re_xxxxxxxxxxxxx
+   supabase secrets set RESEND_API_KEY=re_YtBwcfmi_8ZfqmncjbgPFYmZgvF1nyccV --project-ref hsrtfgpjmchsgunpynbg
    ```
+   ⚠️ **Important** : Ne mettez JAMAIS cette clé dans les variables `VITE_*` car elles sont exposées au frontend. Utilisez uniquement `supabase secrets set`.
 4. Vérifier votre domaine (optionnel mais recommandé)
 5. Mettre à jour le `from` dans `supabase/functions/send-email/index.ts` avec votre domaine vérifié
 
