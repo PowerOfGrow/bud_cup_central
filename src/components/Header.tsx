@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Award, Menu, X, Moon, Sun, User, LogOut } from "lucide-react";
+import { Award, Menu, X, Moon, Sun, User, LogOut, Heart } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useTheme } from "next-themes";
@@ -103,6 +103,12 @@ const Header = () => {
                       <Link to="/dashboard" className="cursor-pointer">
                         <User className="mr-2 h-4 w-4" />
                         Mon compte
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link to="/favorites" className="cursor-pointer">
+                        <Heart className="mr-2 h-4 w-4" />
+                        Mes favoris
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
