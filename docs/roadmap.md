@@ -108,7 +108,7 @@
 - [x] Pipeline GitHub Actions
 - [x] Tests automatiques avant déploiement
 - [x] Déploiement automatique production (Vercel)
-- [ ] Déploiement automatique staging
+- [x] Déploiement automatique staging (branche develop)
 
 ### 5.3 Monitoring
 - [x] Logging des erreurs (Sentry)

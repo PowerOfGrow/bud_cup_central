@@ -6,6 +6,9 @@ on:
   pull_request:
     branches: [main, develop]
 
+# Workflow pour staging uniquement sur develop
+# Workflow pour production uniquement sur main
+
 jobs:
   test:
     name: Tests et Linting

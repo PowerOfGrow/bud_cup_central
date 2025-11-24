@@ -21,7 +21,7 @@ Ce workflow s'exécute sur chaque push et pull request vers `main` ou `develop`.
 - Push sur `main` ou `develop`
 - Pull Request vers `main` ou `develop`
 
-### 2. Deploy to Vercel (`.github/workflows/deploy.yml`)
+### 2. Deploy to Vercel Production (`.github/workflows/deploy.yml`)
 
 Ce workflow déploie automatiquement l'application sur Vercel en production.
 
@@ -34,6 +34,26 @@ Ce workflow déploie automatiquement l'application sur Vercel en production.
 **Déclenchement :**
 - Push sur `main` uniquement
 - Ignore les changements dans `docs/`, `*.md`, `.gitignore`
+
+### 3. Deploy to Vercel Staging (`.github/workflows/deploy-staging.yml`)
+
+Ce workflow déploie automatiquement l'application sur Vercel en staging (preview).
+
+**Actions effectuées :**
+- ✅ Installation de Vercel CLI
+- ✅ Pull des variables d'environnement depuis Vercel (preview)
+- ✅ Build de l'application
+- ✅ Déploiement en staging/preview
+
+**Déclenchement :**
+- Push sur `develop` uniquement
+- Ignore les changements dans `docs/`, `*.md`, `.gitignore`
+
+**Note** : Pour activer le staging, créez une branche `develop` :
+```bash
+git checkout -b develop
+git push origin develop
+```
 
 ## Configuration requise
 
@@ -116,8 +136,8 @@ Vous pouvez voir le statut des workflows :
 
 ## Améliorations futures
 
-- [ ] Tests E2E avec Playwright dans le CI
-- [ ] Déploiement staging automatique sur la branche `develop`
+- [x] Tests E2E avec Playwright dans le CI
+- [x] Déploiement staging automatique sur la branche `develop`
 - [ ] Notifications Slack/Discord sur les échecs
 - [ ] Cache des dépendances pour accélérer les builds
 - [ ] Tests de performance (Lighthouse CI)
