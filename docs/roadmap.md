@@ -79,7 +79,7 @@
 - [ ] Recherche globale étendue (concours, producteurs)
 
 ### 4.2 Notifications
-- [ ] Système de notifications in-app
+- [x] Système de notifications in-app
 - [ ] Notifications email (nouveau concours, résultat, etc.)
 - [ ] Préférences de notification
 
