@@ -250,60 +250,6 @@ await supabase.storage
 
 ## Edge Functions
 
-### `viewer-dashboard`
-
-Retourne les statistiques pour un viewer.
-
-**Endpoint** : `GET /functions/v1/viewer-dashboard?profileId={uuid}`
-
-**Réponse** :
-```json
-{
-  "totalVotes": 5,
-  "averageScore": 4.6,
-  "latestVotes": [...],
-  "upcomingContests": [...]
-}
-```
-
-### `producer-dashboard`
-
-Retourne les statistiques pour un producteur.
-
-**Endpoint** : `GET /functions/v1/producer-dashboard?profileId={uuid}`
-
-**Réponse** :
-```json
-{
-  "totals": {
-    "totalEntries": 2,
-    "approved": 1,
-    "pending": 1
-  },
-  "overallAverage": 91.5,
-  "nextDeadline": "2025-02-15T23:59:59Z",
-  "entries": [...]
-}
-```
-
-### `judge-dashboard`
-
-Retourne les statistiques pour un juge.
-
-**Endpoint** : `GET /functions/v1/judge-dashboard?profileId={uuid}`
-
-**Réponse** :
-```json
-{
-  "assignments": [...],
-  "reviews": [...],
-  "stats": {
-    "totalReviews": 6,
-    "averageScore": 88.5
-  }
-}
-```
-
 ### `send-email`
 
 Envoie un email via Resend.

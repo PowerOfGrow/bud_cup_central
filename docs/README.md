@@ -6,13 +6,10 @@ Bienvenue dans la documentation du projet CBD Flower Cup. Cette documentation es
 
 ### 📊 Analyse et État du Projet
 
-- **[Phases Accomplies](./PHASES_ACCOMPLIES.md)** - Récapitulatif complet de toutes les phases de développement accomplies
-- **[Analyse de l'Application](./ANALYSE_APPLICATION.md)** - Analyse détaillée de l'architecture, des fonctionnalités et des recommandations
 - **[Roadmap](./roadmap.md)** - Feuille de route complète avec priorités et fonctionnalités à venir
 
 ### 🔧 Configuration et Déploiement
 
-- **[Edge Functions](./edge-functions.md)** - Documentation des fonctions serverless Supabase
 - **[Variables d'environnement Vercel](./vercel-env-vars.md)** - Configuration des variables d'environnement pour Vercel
 - **[Secrets Supabase](./supabase-secrets.md)** - Gestion des secrets et clés API Supabase
 - **[Configuration Resend](./RESEND_SETUP.md)** - Guide de configuration de l'API Resend pour les emails
@@ -108,7 +105,6 @@ Pour contribuer au projet, consultez la [roadmap](./roadmap.md) pour voir les fo
 ## 📞 Support
 
 Pour toute question ou problème, consultez :
-- [Analyse de l'Application](./ANALYSE_APPLICATION.md) pour comprendre l'architecture
-- [Phases Accomplies](./PHASES_ACCOMPLIES.md) pour voir ce qui a été fait
+- [Guide Développeur](./DEVELOPER_GUIDE.md) pour comprendre l'architecture
 - [Roadmap](./roadmap.md) pour les prochaines étapes
 
