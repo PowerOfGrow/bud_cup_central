@@ -15,30 +15,34 @@ export function initSentry() {
     return;
   }
 
-  Sentry.init({
-    dsn,
-    environment,
-    integrations: [
-      Sentry.browserTracingIntegration(),
-      Sentry.replayIntegration({
-        maskAllText: true,
-        blockAllMedia: true,
-      }),
-    ],
-    // Performance Monitoring
-    tracesSampleRate: environment === "production" ? 0.1 : 1.0,
-    // Session Replay
-    replaysSessionSampleRate: environment === "production" ? 0.1 : 1.0,
-    replaysOnErrorSampleRate: 1.0,
-    // Ignorer les erreurs locales en développement
-    beforeSend(event, hint) {
-      if (environment === "development") {
-        console.error("Sentry Event:", event, hint);
-        // Ne pas envoyer les erreurs en développement
-        return null;
-      }
-      return event;
-    },
-  });
+  try {
+    Sentry.init({
+      dsn,
+      environment,
+      // Configuration minimale pour éviter les conflits avec React
+      integrations: [
+        // Désactiver les intégrations qui peuvent causer des problèmes avec les hooks
+        // browserTracingIntegration() et replayIntegration() peuvent être ajoutées plus tard si nécessaire
+      ],
+      // Performance Monitoring - désactivé temporairement
+      tracesSampleRate: 0,
+      // Session Replay - désactivé temporairement
+      replaysSessionSampleRate: 0,
+      replaysOnErrorSampleRate: 0,
+      // Ignorer les erreurs locales en développement
+      beforeSend(event, hint) {
+        if (environment === "development") {
+          console.error("Sentry Event:", event, hint);
+          // Ne pas envoyer les erreurs en développement
+          return null;
+        }
+        return event;
+      },
+      // Désactiver les fonctionnalités qui peuvent interférer avec React
+      autoSessionTracking: false,
+    });
+  } catch (error) {
+    console.error("Failed to initialize Sentry:", error);
+  }
 }
 

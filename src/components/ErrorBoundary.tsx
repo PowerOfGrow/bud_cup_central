@@ -28,14 +28,20 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    // Envoyer l'erreur à Sentry
-    Sentry.captureException(error, {
-      contexts: {
-        react: {
-          componentStack: errorInfo.componentStack,
+    // Envoyer l'erreur à Sentry de manière sécurisée
+    try {
+      Sentry.captureException(error, {
+        contexts: {
+          react: {
+            componentStack: errorInfo.componentStack,
+          },
         },
-      },
-    });
+      });
+    } catch (sentryError) {
+      // Si Sentry échoue, on log juste dans la console
+      console.error("Error sending to Sentry:", sentryError);
+      console.error("Original error:", error, errorInfo);
+    }
   }
 
   render() {

@@ -7,8 +7,12 @@ import "./index.css";
 import { queryClient } from "@/lib/queryClient";
 import { initSentry } from "@/lib/sentry";
 
-// Initialiser Sentry avant tout
-initSentry();
+// Initialiser Sentry avant tout (de manière sécurisée)
+try {
+  initSentry();
+} catch (error) {
+  console.error("Failed to initialize Sentry:", error);
+}
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
