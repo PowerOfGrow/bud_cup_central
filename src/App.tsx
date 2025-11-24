@@ -16,6 +16,7 @@ const About = lazy(() => import("./pages/About"));
 const Vote = lazy(() => import("./pages/Vote"));
 const SubmitEntry = lazy(() => import("./pages/SubmitEntry"));
 const JudgeEvaluation = lazy(() => import("./pages/JudgeEvaluation"));
+const ManageContests = lazy(() => import("./pages/ManageContests"));
 
 // Loading component
 const PageLoader = () => (
@@ -62,6 +63,10 @@ const App = () => (
           <Route
             path="/judge-evaluation/:entryId"
             element={<JudgeEvaluation />}
+          />
+          <Route
+            path="/manage-contests"
+            element={<ManageContests />}
           />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />

@@ -359,6 +359,11 @@ const ProducerPanel = () => {
             <Button variant="outline" asChild>
               <Link to="/submit-entry">Soumettre une nouvelle fleur</Link>
             </Button>
+            {profile?.role === "organizer" && (
+              <Button variant="default" asChild>
+                <Link to="/manage-contests">Gérer les concours</Link>
+              </Button>
+            )}
           </div>
         </CardContent>
       </Card>
