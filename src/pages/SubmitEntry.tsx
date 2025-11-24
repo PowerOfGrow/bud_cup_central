@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -52,6 +52,8 @@ type EntryFormValues = z.infer<typeof entrySchema>;
 
 const SubmitEntry = () => {
   const { contestId } = useParams<{ contestId?: string }>();
+  const [searchParams] = useSearchParams();
+  const editEntryId = searchParams.get("edit");
   const navigate = useNavigate();
   const { user, profile } = useAuth();
   const queryClient = useQueryClient();
@@ -71,6 +73,23 @@ const SubmitEntry = () => {
     },
   });
 
+  // Charger l'entrée à éditer si editEntryId est présent
+  const { data: existingEntry, isLoading: loadingEntry } = useQuery({
+    queryKey: ["entry", editEntryId],
+    queryFn: async () => {
+      if (!editEntryId) return null;
+      const { data, error } = await supabase
+        .from("entries")
+        .select("*")
+        .eq("id", editEntryId)
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!editEntryId,
+  });
+
   const form = useForm<EntryFormValues>({
     resolver: zodResolver(entrySchema),
     defaultValues: {
@@ -86,6 +105,23 @@ const SubmitEntry = () => {
     },
   });
 
+  // Charger les données de l'entrée existante dans le formulaire
+  useEffect(() => {
+    if (existingEntry) {
+      form.reset({
+        contest_id: existingEntry.contest_id,
+        strain_name: existingEntry.strain_name,
+        cultivar: existingEntry.cultivar || "",
+        category: existingEntry.category,
+        thc_percent: existingEntry.thc_percent ?? undefined,
+        cbd_percent: existingEntry.cbd_percent ?? undefined,
+        terpene_profile: existingEntry.terpene_profile || "",
+        batch_code: existingEntry.batch_code || "",
+        submission_notes: existingEntry.submission_notes || "",
+      });
+    }
+  }, [existingEntry, form]);
+
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [coaFile, setCoaFile] = useState<File | null>(null);
 
@@ -94,7 +130,7 @@ const SubmitEntry = () => {
       if (!user?.id || !profile) throw new Error("Utilisateur non authentifié");
 
       // Upload photo si présente (simplifié - à améliorer avec buckets Supabase configurés)
-      let photoUrl: string | null = null;
+      let photoUrl: string | null = existingEntry?.photo_url || null;
       if (photoFile) {
         // TODO: Implémenter upload vers Supabase Storage une fois les buckets configurés
         // Pour l'instant, on stocke juste le nom du fichier
@@ -102,14 +138,14 @@ const SubmitEntry = () => {
       }
 
       // Upload COA si présent (simplifié - à améliorer avec buckets Supabase configurés)
-      let coaUrl: string | null = null;
+      let coaUrl: string | null = existingEntry?.coa_url || null;
       if (coaFile) {
         // TODO: Implémenter upload vers Supabase Storage une fois les buckets configurés
         // Pour l'instant, on stocke juste le nom du fichier
         coaUrl = `pending-upload-${coaFile.name}`;
       }
 
-      // Créer l'entrée
+      // Données de l'entrée
       const entryData = {
         contest_id: data.contest_id,
         producer_id: user.id,
@@ -122,26 +158,41 @@ const SubmitEntry = () => {
         batch_code: data.batch_code || null,
         coa_url: coaUrl,
         photo_url: photoUrl,
-        status: "draft" as const,
         submission_notes: data.submission_notes || null,
       };
 
-      const { data: entry, error } = await supabase
-        .from("entries")
-        .insert(entryData)
-        .select()
-        .single();
+      if (editEntryId && existingEntry) {
+        // Mise à jour d'une entrée existante
+        // Ne pas changer le statut si l'entrée est déjà soumise
+        const { data: entry, error } = await supabase
+          .from("entries")
+          .update(entryData)
+          .eq("id", editEntryId)
+          .select()
+          .single();
 
-      if (error) throw error;
-      return entry;
+        if (error) throw error;
+        return entry;
+      } else {
+        // Création d'une nouvelle entrée
+        const { data: entry, error } = await supabase
+          .from("entries")
+          .insert({ ...entryData, status: "draft" as const })
+          .select()
+          .single();
+
+        if (error) throw error;
+        return entry;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["entries"] });
-      toast.success("Entrée créée avec succès ! Vous pouvez la modifier avant de la soumettre.");
+      queryClient.invalidateQueries({ queryKey: ["producer-dashboard"] });
+      toast.success(editEntryId ? "Entrée mise à jour avec succès !" : "Entrée créée avec succès ! Vous pouvez la modifier avant de la soumettre.");
       navigate("/dashboard");
     },
     onError: (error: any) => {
-      toast.error(error.message || "Erreur lors de la création de l'entrée");
+      toast.error(error.message || (editEntryId ? "Erreur lors de la mise à jour de l'entrée" : "Erreur lors de la création de l'entrée"));
     },
   });
 
@@ -149,17 +200,45 @@ const SubmitEntry = () => {
     createEntryMutation.mutate(data);
   };
 
-  if (contestsLoading) {
+  if (contestsLoading || (editEntryId && loadingEntry)) {
     return (
       <div className="min-h-screen">
         <Header />
         <div className="pt-28 pb-16">
           <div className="container mx-auto px-4">
-            <LoadingState message="Chargement des concours…" />
+            <LoadingState message={editEntryId ? "Chargement de l'entrée…" : "Chargement des concours…"} />
           </div>
         </div>
       </div>
     );
+  }
+
+  // Vérifier que l'entrée à éditer appartient bien à l'utilisateur et est en brouillon
+  if (editEntryId && existingEntry) {
+    if (existingEntry.producer_id !== user?.id) {
+      return (
+        <div className="min-h-screen">
+          <Header />
+          <div className="pt-28 pb-16">
+            <div className="container mx-auto px-4">
+              <ErrorState message="Vous n'avez pas l'autorisation de modifier cette entrée" />
+            </div>
+          </div>
+        </div>
+      );
+    }
+    if (existingEntry.status !== "draft") {
+      return (
+        <div className="min-h-screen">
+          <Header />
+          <div className="pt-28 pb-16">
+            <div className="container mx-auto px-4">
+              <ErrorState message="Cette entrée ne peut plus être modifiée car elle a déjà été soumise" />
+            </div>
+          </div>
+        </div>
+      );
+    }
   }
 
   if (!profile || (profile.role !== "producer" && profile.role !== "organizer")) {
@@ -191,9 +270,13 @@ const SubmitEntry = () => {
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-2xl">Soumettre une nouvelle entrée</CardTitle>
+              <CardTitle className="text-2xl">
+                {editEntryId ? "Modifier l'entrée" : "Soumettre une nouvelle entrée"}
+              </CardTitle>
               <CardDescription>
-                Remplissez le formulaire pour soumettre votre variété au concours
+                {editEntryId
+                  ? "Modifiez les informations de votre entrée"
+                  : "Remplissez le formulaire pour soumettre votre variété au concours"}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -449,7 +532,13 @@ const SubmitEntry = () => {
                       type="submit"
                       disabled={createEntryMutation.isPending}
                     >
-                      {createEntryMutation.isPending ? "Création..." : "Créer l'entrée (brouillon)"}
+                      {createEntryMutation.isPending
+                        ? editEntryId
+                          ? "Mise à jour..."
+                          : "Création..."
+                        : editEntryId
+                          ? "Mettre à jour l'entrée"
+                          : "Créer l'entrée (brouillon)"}
                     </Button>
                   </div>
                 </form>

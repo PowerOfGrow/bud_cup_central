@@ -11,6 +11,11 @@ import { LoadingState } from "@/components/LoadingState";
 import { ErrorState } from "@/components/ErrorState";
 import { usePagination } from "@/hooks/use-pagination";
 import { PaginationControls } from "@/components/PaginationControls";
+import { Edit, Trash2, Send } from "lucide-react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { useConfirm } from "@/hooks/use-confirm";
 
 
 const StatCard = ({
@@ -157,8 +162,70 @@ const ProducerEntriesList = ({ entries }: { entries: any[] }) => {
     itemsPerPage: 5,
   });
 
+  const queryClient = useQueryClient();
+  const { confirm: confirmDelete, ConfirmationDialog: DeleteDialog } = useConfirm({
+    title: "Supprimer l'entrée",
+    message: "Êtes-vous sûr de vouloir supprimer cette entrée ? Cette action est irréversible.",
+  });
+  const { confirm: confirmSubmit, ConfirmationDialog: SubmitDialog } = useConfirm({
+    title: "Soumettre l'entrée",
+    message: "Êtes-vous sûr de vouloir soumettre cette entrée ? Elle passera en revue et ne pourra plus être modifiée.",
+  });
+
+  const deleteEntryMutation = useMutation({
+    mutationFn: async (entryId: string) => {
+      const { error } = await supabase
+        .from("entries")
+        .delete()
+        .eq("id", entryId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["producer-dashboard"] });
+      toast.success("Entrée supprimée avec succès");
+    },
+    onError: (error: any) => {
+      toast.error(error.message || "Erreur lors de la suppression");
+    },
+  });
+
+  const submitEntryMutation = useMutation({
+    mutationFn: async (entryId: string) => {
+      const { error } = await supabase
+        .from("entries")
+        .update({ status: "submitted" })
+        .eq("id", entryId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["producer-dashboard"] });
+      toast.success("Entrée soumise avec succès !");
+    },
+    onError: (error: any) => {
+      toast.error(error.message || "Erreur lors de la soumission");
+    },
+  });
+
+  const handleDelete = async (entryId: string) => {
+    const confirmed = await confirmDelete();
+    if (confirmed) {
+      deleteEntryMutation.mutate(entryId);
+    }
+  };
+
+  const handleSubmit = async (entryId: string) => {
+    const confirmed = await confirmSubmit();
+    if (confirmed) {
+      submitEntryMutation.mutate(entryId);
+    }
+  };
+
   return (
     <>
+      <DeleteDialog />
+      <SubmitDialog />
       <div className="grid gap-4">
         {paginatedEntries.length ? (
           paginatedEntries.map((entry) => (
@@ -198,6 +265,41 @@ const ProducerEntriesList = ({ entries }: { entries: any[] }) => {
                   </p>
                 </div>
               </CardContent>
+              {entry.status === "draft" && (
+                <CardContent className="pt-0 border-t">
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      asChild
+                      className="flex-1"
+                    >
+                      <Link to={`/submit-entry/${entry.contest_id}?edit=${entry.id}`}>
+                        <Edit className="mr-2 h-4 w-4" />
+                        Modifier
+                      </Link>
+                    </Button>
+                    <Button
+                      variant="default"
+                      size="sm"
+                      onClick={() => handleSubmit(entry.id)}
+                      disabled={submitEntryMutation.isPending}
+                      className="flex-1"
+                    >
+                      <Send className="mr-2 h-4 w-4" />
+                      Soumettre
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => handleDelete(entry.id)}
+                      disabled={deleteEntryMutation.isPending}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </CardContent>
+              )}
             </Card>
           ))
         ) : (
