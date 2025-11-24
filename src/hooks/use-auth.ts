@@ -21,7 +21,7 @@ export function useAuth() {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
       if (session?.user) {
-        fetchProfile(session.user.id);
+        fetchProfile(session.user);
       } else {
         setLoading(false);
       }
@@ -34,7 +34,7 @@ export function useAuth() {
       setUser(session?.user ?? null);
       
       if (session?.user) {
-        await fetchProfile(session.user.id);
+        await fetchProfile(session.user);
       } else {
         setProfile(null);
         setLoading(false);
@@ -46,17 +46,42 @@ export function useAuth() {
     };
   }, []);
 
-  const fetchProfile = async (userId: string) => {
+  const fetchProfile = async (user: User) => {
     try {
       const { data, error } = await supabase
         .from("profiles")
         .select("*")
-        .eq("id", userId)
+        .eq("id", user.id)
         .single();
 
       if (error) {
-        console.error("Error fetching profile:", error);
-        setProfile(null);
+        // Si le profil n'existe pas, le créer
+        if (error.code === "PGRST116") {
+          console.log("Profil non trouvé, création en cours...");
+          const displayName = user.user_metadata?.display_name || 
+                             user.email?.split("@")[0] || 
+                             "Utilisateur";
+          
+          const { data: newProfile, error: createError } = await supabase
+            .from("profiles")
+            .insert({
+              id: user.id,
+              display_name: displayName,
+              role: "viewer",
+            })
+            .select()
+            .single();
+
+          if (createError) {
+            console.error("Error creating profile:", createError);
+            setProfile(null);
+          } else {
+            setProfile(newProfile);
+          }
+        } else {
+          console.error("Error fetching profile:", error);
+          setProfile(null);
+        }
       } else {
         setProfile(data);
       }
