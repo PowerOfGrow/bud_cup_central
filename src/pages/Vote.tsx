@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Header from "@/components/Header";
 import { LoadingState } from "@/components/LoadingState";
+import { CommentsSection } from "@/components/CommentsSection";
 import { ErrorState } from "@/components/ErrorState";
 
 const Vote = () => {
@@ -232,6 +233,11 @@ const Vote = () => {
               </form>
             </CardContent>
           </Card>
+
+          {/* Section des commentaires */}
+          <div className="mt-8">
+            <CommentsSection entryId={entryId || ""} entryName={entry?.strain_name} />
+          </div>
         </div>
       </div>
     </div>

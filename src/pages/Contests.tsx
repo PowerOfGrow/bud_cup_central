@@ -19,8 +19,10 @@ import { useAuth } from "@/hooks/use-auth";
 import { usePagination } from "@/hooks/use-pagination";
 import { PaginationControls } from "@/components/PaginationControls";
 import { useFavorites } from "@/hooks/use-favorites";
-import { Heart, Share2 } from "lucide-react";
+import { Heart, Share2, MessageSquare } from "lucide-react";
 import { toast } from "sonner";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 const statusLabel: Record<string, string> = {
   registration: "Inscriptions ouvertes",
@@ -39,6 +41,19 @@ const statusTone: Record<string, string> = {
 // Composant pour une carte d'entrée avec favoris et partage
 const EntryCard = ({ entry, profile }: { entry: any; profile: any }) => {
   const { isFavorite, toggleFavorite, isToggling } = useFavorites(entry.id);
+  
+  // Récupérer le nombre de commentaires
+  const { data: commentsCount } = useQuery({
+    queryKey: ["comments-count", entry.id],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from("entry_comments")
+        .select("*", { count: "exact", head: true })
+        .eq("entry_id", entry.id);
+      if (error) return 0;
+      return count || 0;
+    },
+  });
 
   const handleShare = () => {
     const url = `${window.location.origin}/contests`;
@@ -70,6 +85,12 @@ const EntryCard = ({ entry, profile }: { entry: any; profile: any }) => {
         </div>
         <div className="flex items-center gap-2">
           <Badge className="bg-accent/10 text-accent capitalize">{entry.category}</Badge>
+          {commentsCount !== undefined && commentsCount > 0 && (
+            <Badge variant="secondary" className="flex items-center gap-1">
+              <MessageSquare className="h-3 w-3" />
+              {commentsCount}
+            </Badge>
+          )}
           {profile && (
             <>
               <Button

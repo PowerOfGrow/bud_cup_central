@@ -92,7 +92,7 @@
 ### 4.4 Social Features
 - [x] Partage sur réseaux sociaux
 - [x] Favoris/Wishlist
-- [ ] Commentaires sur les entrées
+- [x] Commentaires sur les entrées
 
 ---
 
