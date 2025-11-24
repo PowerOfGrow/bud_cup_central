@@ -63,10 +63,10 @@
 - [x] Pagination pour les listes longues
 
 ### 3.3 Responsive & Accessibilité
+- [x] Amélioration du contraste (WCAG AA)
+- [x] Navigation au clavier (focus visible, skip links)
+- [x] Support des lecteurs d'écran (ARIA labels, roles)
 - [ ] Tests sur tous les breakpoints
-- [ ] Amélioration du contraste (WCAG AA)
-- [ ] Navigation au clavier
-- [ ] Support des lecteurs d'écran
 
 ---
 

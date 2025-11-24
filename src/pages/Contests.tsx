@@ -498,6 +498,7 @@ const Contests = () => {
           </section>
         )}
       </div>
+      </main>
     </div>
   );
 };

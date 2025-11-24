@@ -32,12 +32,20 @@ const Header = () => {
   };
 
   return (
-    <header className="fixed top-0 w-full z-50 bg-background/80 backdrop-blur-md border-b border-border">
+    <header 
+      className="fixed top-0 w-full z-50 bg-background/80 backdrop-blur-md border-b border-border"
+      role="banner"
+      aria-label="En-tête principal"
+    >
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-20">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-3 group">
-            <div className="bg-gradient-premium p-2 rounded-lg shadow-elegant group-hover:shadow-gold transition-all duration-500 group-hover:scale-110 group-hover:rotate-3">
+          <Link 
+            to="/" 
+            className="flex items-center gap-3 group focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 rounded-lg"
+            aria-label="Retour à l'accueil - CBD Flower Cup"
+          >
+            <div className="bg-gradient-premium p-2 rounded-lg shadow-elegant group-hover:shadow-gold transition-all duration-500 group-hover:scale-110 group-hover:rotate-3" aria-hidden="true">
               <Award className="h-8 w-8 text-accent transition-transform duration-300" />
             </div>
             <div>
@@ -47,22 +55,43 @@ const Header = () => {
           </Link>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center gap-8">
-            <Link to="/" className="text-foreground hover:text-accent transition-all duration-300 hover:scale-110 font-medium relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-accent after:transition-all after:duration-300 hover:after:w-full">
+          <nav 
+            className="hidden md:flex items-center gap-8"
+            role="navigation"
+            aria-label="Navigation principale"
+          >
+            <Link 
+              to="/" 
+              className="text-foreground hover:text-accent transition-all duration-300 hover:scale-110 font-medium relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-accent after:transition-all after:duration-300 hover:after:w-full focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 rounded px-2"
+              aria-label="Aller à la page d'accueil"
+            >
               Accueil
             </Link>
-            <Link to="/contests" className="text-foreground hover:text-accent transition-all duration-300 hover:scale-110 font-medium relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-accent after:transition-all after:duration-300 hover:after:w-full">
+            <Link 
+              to="/contests" 
+              className="text-foreground hover:text-accent transition-all duration-300 hover:scale-110 font-medium relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-accent after:transition-all after:duration-300 hover:after:w-full focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 rounded px-2"
+              aria-label="Voir les concours"
+            >
               Concours
             </Link>
-            <Link to="/about" className="text-foreground hover:text-accent transition-all duration-300 hover:scale-110 font-medium relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-accent after:transition-all after:duration-300 hover:after:w-full">
+            <Link 
+              to="/about" 
+              className="text-foreground hover:text-accent transition-all duration-300 hover:scale-110 font-medium relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-accent after:transition-all after:duration-300 hover:after:w-full focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 rounded px-2"
+              aria-label="En savoir plus sur la plateforme"
+            >
               À propos
             </Link>
           </nav>
 
           {/* CTA Buttons */}
           <div className="hidden md:flex items-center gap-4">
-            <Button variant="ghost" size="icon" asChild>
-              <Link to="/search">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              asChild
+              aria-label="Rechercher sur la plateforme"
+            >
+              <Link to="/search" className="focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 rounded">
                 <Search className="h-5 w-5" />
               </Link>
             </Button>
@@ -71,7 +100,8 @@ const Header = () => {
                 variant="ghost"
                 size="icon"
                 onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-                className="transition-all duration-300 hover:scale-110 hover:rotate-12"
+                className="transition-all duration-300 hover:scale-110 hover:rotate-12 focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2"
+                aria-label={theme === "dark" ? "Passer en mode clair" : "Passer en mode sombre"}
               >
                 {theme === "dark" ? (
                   <Sun className="h-5 w-5 text-accent" />
