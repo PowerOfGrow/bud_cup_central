@@ -143,6 +143,16 @@ await page.getByRole('button', { name: /connexion/i }).click();
 - Utilisez `page.locator()` avec des sélecteurs CSS si nécessaire
 - Ajoutez des `data-testid` dans vos composants pour des sélecteurs plus stables
 
+## Tests Responsive
+
+Des tests spécifiques pour le responsive design sont disponibles dans `e2e/responsive.spec.ts` :
+
+- ✅ Tests sur mobile (320px, 375px)
+- ✅ Tests sur tablette (768px)
+- ✅ Tests sur desktop (1280px, 1920px)
+- ✅ Vérification des débordements horizontaux
+- ✅ Tests sur différents devices (Chrome, Safari, iPad)
+
 ## Améliorations futures
 
 - [ ] Tests d'authentification complète (login/logout)
@@ -151,5 +161,4 @@ await page.getByRole('button', { name: /connexion/i }).click();
 - [ ] Tests de gestion de concours (organisateur)
 - [ ] Tests de vote public
 - [ ] Tests de recherche et filtres
-- [ ] Tests de responsive design
 

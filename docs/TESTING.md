@@ -12,6 +12,29 @@ Les dépendances de test sont déjà installées :
 npm install
 ```
 
+## Types de tests
+
+### Tests unitaires
+Les tests unitaires vérifient le comportement isolé des composants et hooks.
+
+**Localisation** : `src/**/__tests__/`
+
+### Tests d'intégration
+Les tests d'intégration vérifient le comportement de plusieurs composants ensemble.
+
+**Localisation** : `src/__tests__/integration/`
+
+**Tests disponibles** :
+- `auth-flow.test.tsx` : Flux d'authentification (login, register, protected routes)
+- `entry-flow.test.tsx` : Flux des entrées (affichage, recherche)
+
+### Tests E2E
+Les tests end-to-end vérifient le comportement complet de l'application.
+
+**Localisation** : `e2e/`
+
+**Voir** : [Documentation E2E](./E2E_TESTING.md)
+
 ## Exécution des tests
 
 ### Tous les tests
