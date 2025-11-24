@@ -20,6 +20,9 @@ Bienvenue dans la documentation du projet CBD Flower Cup. Cette documentation es
 - **[Tests E2E](./E2E_TESTING.md)** - Guide des tests end-to-end avec Playwright
 - **[CI/CD](./CI_CD.md)** - Configuration et utilisation des workflows GitHub Actions
 - **[Monitoring](./MONITORING.md)** - Configuration Sentry pour le logging des erreurs
+- **[API](./API.md)** - Documentation complète de l'API Supabase
+- **[Guide Utilisateur](./USER_GUIDE.md)** - Guide complet pour les utilisateurs finaux
+- **[Guide Développeur](./DEVELOPER_GUIDE.md)** - Guide pour les développeurs
 
 ## 🚀 Démarrage Rapide
 

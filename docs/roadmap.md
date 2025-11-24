@@ -116,9 +116,9 @@
 - [ ] Monitoring des performances (Vercel Analytics)
 
 ### 5.4 Documentation
-- [ ] Documentation API
-- [ ] Guide utilisateur
-- [ ] Guide développeur
+- [x] Documentation API
+- [x] Guide utilisateur
+- [x] Guide développeur
 
 ---
 
