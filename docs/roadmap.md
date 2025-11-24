@@ -136,3 +136,4 @@
 - Blog/Actualités intégré
 - Multilingue (FR/EN)
 
+
