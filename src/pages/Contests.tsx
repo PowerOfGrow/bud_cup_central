@@ -8,6 +8,8 @@ import { LoadingState } from "@/components/LoadingState";
 import { ErrorState } from "@/components/ErrorState";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/use-auth";
+import { usePagination } from "@/hooks/use-pagination";
+import { PaginationControls } from "@/components/PaginationControls";
 
 const statusLabel: Record<string, string> = {
   registration: "Inscriptions ouvertes",
@@ -44,6 +46,16 @@ const Contests = () => {
     isLoading: isLoadingEntries,
     error: entriesError,
   } = useContestEntries(selectedContestId ?? undefined);
+
+  const {
+    paginatedData: paginatedEntries,
+    currentPage,
+    totalPages,
+    goToPage,
+  } = usePagination({
+    data: entries ?? [],
+    itemsPerPage: 6,
+  });
 
   return (
     <div className="min-h-screen bg-background pt-28 pb-16">
@@ -168,8 +180,8 @@ const Contests = () => {
 
             {!isLoadingEntries && !entriesError && (
               <div className="space-y-6">
-                {entries?.length ? (
-                  entries.map((entry) => (
+                {paginatedEntries.length ? (
+                  paginatedEntries.map((entry) => (
                     <Card key={entry.id} className="border-border/80 hover:border-accent/50 transition-all">
                       <CardHeader className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
                         <div>
@@ -238,6 +250,15 @@ const Contests = () => {
                       Aucune entrée approuvée pour cette édition pour le moment.
                     </CardContent>
                   </Card>
+                )}
+                {totalPages > 1 && (
+                  <div className="mt-8">
+                    <PaginationControls
+                      currentPage={currentPage}
+                      totalPages={totalPages}
+                      onPageChange={goToPage}
+                    />
+                  </div>
                 )}
               </div>
             )}

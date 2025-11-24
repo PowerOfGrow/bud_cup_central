@@ -9,6 +9,8 @@ import { Award, CheckCircle2, Clock3, Eye, Leaf, Scale, Shield, Star, Users } fr
 import { useAuth } from "@/hooks/use-auth";
 import { LoadingState } from "@/components/LoadingState";
 import { ErrorState } from "@/components/ErrorState";
+import { usePagination } from "@/hooks/use-pagination";
+import { PaginationControls } from "@/components/PaginationControls";
 
 
 const StatCard = ({
@@ -144,6 +146,81 @@ const ViewerPanel = () => {
   );
 };
 
+const ProducerEntriesList = ({ entries }: { entries: any[] }) => {
+  const {
+    paginatedData: paginatedEntries,
+    currentPage,
+    totalPages,
+    goToPage,
+  } = usePagination({
+    data: entries,
+    itemsPerPage: 5,
+  });
+
+  return (
+    <>
+      <div className="grid gap-4">
+        {paginatedEntries.length ? (
+          paginatedEntries.map((entry) => (
+            <Card key={entry.id} className="border-border/60 hover:border-accent/40 transition-colors">
+              <CardHeader className="space-y-1">
+                <div className="flex items-center justify-between gap-3 flex-wrap">
+                  <div>
+                    <CardTitle className="text-xl text-foreground">{entry.strain_name}</CardTitle>
+                    <CardDescription>{entry.contest?.name ?? "Concours à confirmer"}</CardDescription>
+                  </div>
+                  <Badge variant="secondary" className="capitalize">{entry.status}</Badge>
+                </div>
+              </CardHeader>
+              <CardContent className="grid gap-4 md:grid-cols-3">
+                <div className="rounded-xl bg-muted/50 p-4">
+                  <p className="text-xs text-muted-foreground mb-1">Statut conformité</p>
+                  <p className="text-sm font-medium text-foreground">
+                    {entry.status === "approved"
+                      ? "Validé"
+                      : entry.status === "submitted" || entry.status === "under_review"
+                        ? "En revue"
+                        : "Brouillon"}
+                  </p>
+                </div>
+                <div className="rounded-xl bg-muted/50 p-4">
+                  <p className="text-xs text-muted-foreground mb-1">Score jury</p>
+                  <p className="text-sm font-medium text-foreground">
+                    {entry.judgeAverage ? `${entry.judgeAverage}/100` : "En attente"}
+                    <span className="text-xs text-muted-foreground"> ({entry.judgeScoresCount} retours)</span>
+                  </p>
+                </div>
+                <div className="rounded-xl bg-muted/50 p-4">
+                  <p className="text-xs text-muted-foreground mb-1">Vote public</p>
+                  <p className="text-sm font-medium text-foreground">
+                    {entry.publicAverage ? `${entry.publicAverage}/5` : "Pas encore de votes"}
+                    <span className="text-xs text-muted-foreground"> ({entry.publicVotesCount})</span>
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          ))
+        ) : (
+          <Card className="border-dashed">
+            <CardContent className="py-10 text-center text-muted-foreground">
+              Aucune entrée active. Soumettez votre première fleur !
+            </CardContent>
+          </Card>
+        )}
+      </div>
+      {totalPages > 1 && (
+        <div className="mt-6">
+          <PaginationControls
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={goToPage}
+          />
+        </div>
+      )}
+    </>
+  );
+};
+
 const ProducerPanel = () => {
   const { profile } = useAuth();
   const producerId = profile?.id;
@@ -185,55 +262,7 @@ const ProducerPanel = () => {
       </Card>
 
       <SectionWrapper title="Entrées actives" description="Suivi temps réel de vos candidatures.">
-        <div className="grid gap-4">
-          {data.entries.length ? (
-            data.entries.map((entry) => (
-              <Card key={entry.id} className="border-border/60 hover:border-accent/40 transition-colors">
-                <CardHeader className="space-y-1">
-                  <div className="flex items-center justify-between gap-3 flex-wrap">
-                    <div>
-                      <CardTitle className="text-xl text-foreground">{entry.strain_name}</CardTitle>
-                      <CardDescription>{entry.contest?.name ?? "Concours à confirmer"}</CardDescription>
-                    </div>
-                    <Badge variant="secondary" className="capitalize">{entry.status}</Badge>
-                  </div>
-                </CardHeader>
-                <CardContent className="grid gap-4 md:grid-cols-3">
-                  <div className="rounded-xl bg-muted/50 p-4">
-                    <p className="text-xs text-muted-foreground mb-1">Statut conformité</p>
-                    <p className="text-sm font-medium text-foreground">
-                      {entry.status === "approved"
-                        ? "Validé"
-                        : entry.status === "submitted" || entry.status === "under_review"
-                          ? "En revue"
-                          : "Brouillon"}
-                    </p>
-                  </div>
-                  <div className="rounded-xl bg-muted/50 p-4">
-                    <p className="text-xs text-muted-foreground mb-1">Score jury</p>
-                    <p className="text-sm font-medium text-foreground">
-                      {entry.judgeAverage ? `${entry.judgeAverage}/100` : "En attente"}
-                      <span className="text-xs text-muted-foreground"> ({entry.judgeScoresCount} retours)</span>
-                    </p>
-                  </div>
-                  <div className="rounded-xl bg-muted/50 p-4">
-                    <p className="text-xs text-muted-foreground mb-1">Vote public</p>
-                    <p className="text-sm font-medium text-foreground">
-                      {entry.publicAverage ? `${entry.publicAverage}/5` : "Pas encore de votes"}
-                      <span className="text-xs text-muted-foreground"> ({entry.publicVotesCount})</span>
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            ))
-          ) : (
-            <Card className="border-dashed">
-              <CardContent className="py-10 text-center text-muted-foreground">
-                Aucune entrée active. Soumettez votre première fleur !
-              </CardContent>
-            </Card>
-          )}
-        </div>
+        <ProducerEntriesList entries={data.entries} />
       </SectionWrapper>
     </div>
   );
