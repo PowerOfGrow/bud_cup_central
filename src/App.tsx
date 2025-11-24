@@ -23,6 +23,7 @@ const ContestResults = lazy(() => import("./pages/ContestResults"));
 const Notifications = lazy(() => import("./pages/Notifications"));
 const Favorites = lazy(() => import("./pages/Favorites"));
 const Search = lazy(() => import("./pages/Search"));
+const Settings = lazy(() => import("./pages/Settings"));
 
 // Loading component
 const PageLoader = () => (
@@ -100,6 +101,14 @@ const App = () => (
             }
           />
           <Route path="/search" element={<Search />} />
+          <Route
+            path="/settings"
+            element={
+              <ProtectedRoute>
+                <Settings />
+              </ProtectedRoute>
+            }
+          />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

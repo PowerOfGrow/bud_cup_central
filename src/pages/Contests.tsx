@@ -23,6 +23,7 @@ import { Heart, Share2, MessageSquare } from "lucide-react";
 import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import Header from "@/components/Header";
 
 const statusLabel: Record<string, string> = {
   registration: "Inscriptions ouvertes",
@@ -255,7 +256,9 @@ const Contests = () => {
   }, [searchQuery, categoryFilter, sortBy, goToPage]);
 
   return (
-    <div className="min-h-screen bg-background pt-28 pb-16">
+    <div className="min-h-screen bg-background">
+      <Header />
+      <main id="main-content" tabIndex={-1} className="focus:outline-none pt-28 pb-16">
       <div className="container mx-auto px-4">
         <div className="max-w-3xl mx-auto text-center mb-12">
           <Badge className="mb-4 bg-gradient-gold text-foreground/90">Concours</Badge>

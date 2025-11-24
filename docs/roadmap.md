@@ -80,8 +80,9 @@
 
 ### 4.2 Notifications
 - [x] Système de notifications in-app
-- [ ] Notifications email (nouveau concours, résultat, etc.)
-- [ ] Préférences de notification
+- [x] Préférences de notification (page Settings)
+- [x] Structure pour notifications email (Edge Function)
+- [ ] Configuration service email (Resend/SendGrid) - À configurer manuellement
 
 ### 4.3 Analytics & Reporting
 - [x] Tableau de bord analytics pour organisateurs
