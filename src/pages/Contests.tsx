@@ -1,8 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
-import { Award, CalendarDays, MapPin, Users, Scale } from "lucide-react";
+import { Award, CalendarDays, MapPin, Users, Scale, Search, X, Filter } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useContests, useContestEntries } from "@/hooks/use-contests";
 import { LoadingState } from "@/components/LoadingState";
 import { ErrorState } from "@/components/ErrorState";
@@ -29,6 +37,9 @@ const Contests = () => {
   const { data: contests, isLoading, error } = useContests();
   const { profile } = useAuth();
   const [selectedContestId, setSelectedContestId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [sortBy, setSortBy] = useState<string>("name");
 
   useEffect(() => {
     if (!selectedContestId && contests?.length) {
@@ -47,15 +58,59 @@ const Contests = () => {
     error: entriesError,
   } = useContestEntries(selectedContestId ?? undefined);
 
+  // Filtrer et trier les entrées
+  const filteredAndSortedEntries = useMemo(() => {
+    if (!entries) return [];
+
+    let filtered = [...entries];
+
+    // Filtre par recherche
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(
+        (entry) =>
+          entry.strain_name.toLowerCase().includes(query) ||
+          entry.producerName?.toLowerCase().includes(query) ||
+          entry.producerOrganization?.toLowerCase().includes(query) ||
+          entry.terpene_profile?.toLowerCase().includes(query)
+      );
+    }
+
+    // Filtre par catégorie
+    if (categoryFilter !== "all") {
+      filtered = filtered.filter((entry) => entry.category === categoryFilter);
+    }
+
+    // Tri
+    filtered.sort((a, b) => {
+      switch (sortBy) {
+        case "judge-score":
+          return (b.judgeAverage ?? 0) - (a.judgeAverage ?? 0);
+        case "public-vote":
+          return (b.publicAverage ?? 0) - (a.publicAverage ?? 0);
+        case "name":
+        default:
+          return a.strain_name.localeCompare(b.strain_name);
+      }
+    });
+
+    return filtered;
+  }, [entries, searchQuery, categoryFilter, sortBy]);
+
   const {
     paginatedData: paginatedEntries,
     currentPage,
     totalPages,
     goToPage,
   } = usePagination({
-    data: entries ?? [],
+    data: filteredAndSortedEntries,
     itemsPerPage: 6,
   });
+
+  // Réinitialiser la pagination quand les filtres changent
+  useEffect(() => {
+    goToPage(1);
+  }, [searchQuery, categoryFilter, sortBy, goToPage]);
 
   return (
     <div className="min-h-screen bg-background pt-28 pb-16">
@@ -180,6 +235,88 @@ const Contests = () => {
 
             {!isLoadingEntries && !entriesError && (
               <div className="space-y-6">
+                {/* Barre de recherche et filtres */}
+                <Card className="border-border/60">
+                  <CardContent className="p-4">
+                    <div className="flex flex-col gap-4 md:flex-row md:items-center">
+                      {/* Recherche */}
+                      <div className="flex-1 relative">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          placeholder="Rechercher par nom, producteur, terpènes..."
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          className="pl-10 pr-10"
+                        />
+                        {searchQuery && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="absolute right-1 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0"
+                            onClick={() => setSearchQuery("")}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+
+                      {/* Filtre catégorie */}
+                      <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                        <SelectTrigger className="w-full md:w-[180px]">
+                          <Filter className="mr-2 h-4 w-4" />
+                          <SelectValue placeholder="Catégorie" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Toutes les catégories</SelectItem>
+                          <SelectItem value="indica">Indica</SelectItem>
+                          <SelectItem value="sativa">Sativa</SelectItem>
+                          <SelectItem value="hybrid">Hybrid</SelectItem>
+                          <SelectItem value="outdoor">Outdoor</SelectItem>
+                          <SelectItem value="hash">Hash</SelectItem>
+                          <SelectItem value="other">Autre</SelectItem>
+                        </SelectContent>
+                      </Select>
+
+                      {/* Tri */}
+                      <Select value={sortBy} onValueChange={setSortBy}>
+                        <SelectTrigger className="w-full md:w-[180px]">
+                          <SelectValue placeholder="Trier par" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="name">Nom (A-Z)</SelectItem>
+                          <SelectItem value="judge-score">Score jury (↓)</SelectItem>
+                          <SelectItem value="public-vote">Vote public (↓)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* Résultats */}
+                    <div className="mt-4 text-sm text-muted-foreground">
+                      {filteredAndSortedEntries.length === 0 ? (
+                        <span>Aucune entrée ne correspond à vos critères</span>
+                      ) : (
+                        <span>
+                          {filteredAndSortedEntries.length} entrée{filteredAndSortedEntries.length > 1 ? "s" : ""} trouvée{filteredAndSortedEntries.length > 1 ? "s" : ""}
+                          {(searchQuery || categoryFilter !== "all") && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="ml-2 h-auto p-0 text-xs"
+                              onClick={() => {
+                                setSearchQuery("");
+                                setCategoryFilter("all");
+                                setSortBy("name");
+                              }}
+                            >
+                              Réinitialiser
+                            </Button>
+                          )}
+                        </span>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+
                 {paginatedEntries.length ? (
                   paginatedEntries.map((entry) => (
                     <Card key={entry.id} className="border-border/80 hover:border-accent/50 transition-all">
