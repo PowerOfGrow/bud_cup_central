@@ -18,6 +18,9 @@ import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/use-auth";
 import { usePagination } from "@/hooks/use-pagination";
 import { PaginationControls } from "@/components/PaginationControls";
+import { useFavorites } from "@/hooks/use-favorites";
+import { Heart, Share2 } from "lucide-react";
+import { toast } from "sonner";
 
 const statusLabel: Record<string, string> = {
   registration: "Inscriptions ouvertes",
@@ -33,6 +36,123 @@ const statusTone: Record<string, string> = {
   archived: "bg-muted text-muted-foreground",
 };
 
+// Composant pour une carte d'entrée avec favoris et partage
+const EntryCard = ({ entry, profile }: { entry: any; profile: any }) => {
+  const { isFavorite, toggleFavorite, isToggling } = useFavorites(entry.id);
+
+  const handleShare = () => {
+    const url = `${window.location.origin}/contests`;
+    const text = `Découvrez ${entry.strain_name} sur CBD Flower Cup !`;
+    
+    if (navigator.share) {
+      navigator.share({
+        title: entry.strain_name,
+        text: text,
+        url: url,
+      }).catch(() => {
+        // Fallback si l'utilisateur annule
+      });
+    } else {
+      // Fallback : copier dans le presse-papiers
+      navigator.clipboard.writeText(`${text} ${url}`);
+      toast.success("Lien copié dans le presse-papiers !");
+    }
+  };
+
+  return (
+    <Card className="border-border/80 hover:border-accent/50 transition-all">
+      <CardHeader className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+        <div className="flex-1">
+          <CardTitle className="text-2xl text-foreground">{entry.strain_name}</CardTitle>
+          <CardDescription>
+            {entry.producerName} {entry.producerOrganization ? `• ${entry.producerOrganization}` : ""}
+          </CardDescription>
+        </div>
+        <div className="flex items-center gap-2">
+          <Badge className="bg-accent/10 text-accent capitalize">{entry.category}</Badge>
+          {profile && (
+            <>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => toggleFavorite(entry.id)}
+                disabled={isToggling}
+                className="h-8 w-8"
+              >
+                <Heart
+                  className={`h-4 w-4 ${
+                    isFavorite
+                      ? "fill-red-500 text-red-500"
+                      : "text-muted-foreground"
+                  }`}
+                />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleShare}
+                className="h-8 w-8"
+              >
+                <Share2 className="h-4 w-4 text-muted-foreground" />
+              </Button>
+            </>
+          )}
+        </div>
+      </CardHeader>
+      <CardContent className="grid gap-4 md:grid-cols-3">
+        <div className="bg-muted/40 rounded-xl p-4">
+          <p className="text-sm text-muted-foreground mb-1">Profil Cannabinoïde</p>
+          <p className="text-lg font-semibold text-foreground">
+            THC {entry.thc_percent ?? "—"}% · CBD {entry.cbd_percent ?? "—"}%
+          </p>
+          <p className="text-xs text-muted-foreground line-clamp-2 mt-2">
+            {entry.terpene_profile ?? "Profil terpènes non communiqué"}
+          </p>
+        </div>
+        <div className="bg-muted/40 rounded-xl p-4">
+          <p className="text-sm text-muted-foreground mb-1">Score jury</p>
+          <p className="text-lg font-semibold text-foreground">
+            {entry.judgeAverage ? `${entry.judgeAverage}/100` : "En attente"}
+          </p>
+          <p className="text-xs text-muted-foreground">{entry.judgeScoresCount} fiche(s) reçue(s)</p>
+        </div>
+        <div className="bg-muted/40 rounded-xl p-4">
+          <p className="text-sm text-muted-foreground mb-1">Vote public</p>
+          <p className="text-lg font-semibold text-foreground">
+            {entry.publicAverage ? `${entry.publicAverage}/5` : "Aucun vote"}
+          </p>
+          <p className="text-xs text-muted-foreground">{entry.publicVotesCount} vote(s)</p>
+        </div>
+      </CardContent>
+      <CardContent className="pt-0 border-t">
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            className="flex-1"
+            asChild
+          >
+            <Link to={`/vote/${entry.id}`}>
+              Voter
+            </Link>
+          </Button>
+          {(profile?.role === "judge" || profile?.role === "organizer") && (
+            <Button
+              variant="default"
+              className="flex-1"
+              asChild
+            >
+              <Link to={`/judge-evaluation/${entry.id}`}>
+                <Scale className="mr-2 h-4 w-4" />
+                Évaluer
+              </Link>
+            </Button>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
 const Contests = () => {
   const { data: contests, isLoading, error } = useContests();
   const { profile } = useAuth();
@@ -40,6 +160,7 @@ const Contests = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [sortBy, setSortBy] = useState<string>("name");
+
 
   useEffect(() => {
     if (!selectedContestId && contests?.length) {
@@ -333,67 +454,7 @@ const Contests = () => {
 
                 {paginatedEntries.length ? (
                   paginatedEntries.map((entry) => (
-                    <Card key={entry.id} className="border-border/80 hover:border-accent/50 transition-all">
-                      <CardHeader className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-                        <div>
-                          <CardTitle className="text-2xl text-foreground">{entry.strain_name}</CardTitle>
-                          <CardDescription>
-                            {entry.producerName} {entry.producerOrganization ? `• ${entry.producerOrganization}` : ""}
-                          </CardDescription>
-                        </div>
-                        <Badge className="bg-accent/10 text-accent capitalize">{entry.category}</Badge>
-                      </CardHeader>
-                      <CardContent className="grid gap-4 md:grid-cols-3">
-                        <div className="bg-muted/40 rounded-xl p-4">
-                          <p className="text-sm text-muted-foreground mb-1">Profil Cannabinoïde</p>
-                          <p className="text-lg font-semibold text-foreground">
-                            THC {entry.thc_percent ?? "—"}% · CBD {entry.cbd_percent ?? "—"}%
-                          </p>
-                          <p className="text-xs text-muted-foreground line-clamp-2 mt-2">
-                            {entry.terpene_profile ?? "Profil terpènes non communiqué"}
-                          </p>
-                        </div>
-                        <div className="bg-muted/40 rounded-xl p-4">
-                          <p className="text-sm text-muted-foreground mb-1">Score jury</p>
-                          <p className="text-lg font-semibold text-foreground">
-                            {entry.judgeAverage ? `${entry.judgeAverage}/100` : "En attente"}
-                          </p>
-                          <p className="text-xs text-muted-foreground">{entry.judgeScoresCount} fiche(s) reçue(s)</p>
-                        </div>
-                        <div className="bg-muted/40 rounded-xl p-4">
-                          <p className="text-sm text-muted-foreground mb-1">Vote public</p>
-                          <p className="text-lg font-semibold text-foreground">
-                            {entry.publicAverage ? `${entry.publicAverage}/5` : "Aucun vote"}
-                          </p>
-                          <p className="text-xs text-muted-foreground">{entry.publicVotesCount} vote(s)</p>
-                        </div>
-                      </CardContent>
-                      <CardContent className="pt-0 border-t">
-                        <div className="flex gap-2">
-                          <Button
-                            variant="outline"
-                            className="flex-1"
-                            asChild
-                          >
-                            <Link to={`/vote/${entry.id}`}>
-                              Voter
-                            </Link>
-                          </Button>
-                          {(profile?.role === "judge" || profile?.role === "organizer") && (
-                            <Button
-                              variant="default"
-                              className="flex-1"
-                              asChild
-                            >
-                              <Link to={`/judge-evaluation/${entry.id}`}>
-                                <Scale className="mr-2 h-4 w-4" />
-                                Évaluer
-                              </Link>
-                            </Button>
-                          )}
-                        </div>
-                      </CardContent>
-                    </Card>
+                    <EntryCard key={entry.id} entry={entry} profile={profile} />
                   ))
                 ) : (
                   <Card className="border-dashed">

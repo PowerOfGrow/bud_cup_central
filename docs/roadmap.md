@@ -90,9 +90,9 @@
 - [ ] Export PDF
 
 ### 4.4 Social Features
-- [ ] Partage sur réseaux sociaux
+- [x] Partage sur réseaux sociaux
+- [x] Favoris/Wishlist
 - [ ] Commentaires sur les entrées
-- [ ] Favoris/Wishlist
 
 ---
 

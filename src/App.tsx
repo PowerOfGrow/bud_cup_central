@@ -20,6 +20,7 @@ const ManageContests = lazy(() => import("./pages/ManageContests"));
 const ManageContestJudges = lazy(() => import("./pages/ManageContestJudges"));
 const ContestResults = lazy(() => import("./pages/ContestResults"));
 const Notifications = lazy(() => import("./pages/Notifications"));
+const Favorites = lazy(() => import("./pages/Favorites"));
 
 // Loading component
 const PageLoader = () => (
@@ -84,6 +85,14 @@ const App = () => (
             element={
               <ProtectedRoute>
                 <Notifications />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/favorites"
+            element={
+              <ProtectedRoute>
+                <Favorites />
               </ProtectedRoute>
             }
           />
