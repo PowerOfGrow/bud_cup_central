@@ -4,6 +4,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useContests, useContestEntries } from "@/hooks/use-contests";
+import { LoadingState } from "@/components/LoadingState";
+import { ErrorState } from "@/components/ErrorState";
+import { Link } from "react-router-dom";
 
 const statusLabel: Record<string, string> = {
   registration: "Inscriptions ouvertes",
@@ -52,18 +55,13 @@ const Contests = () => {
           </p>
         </div>
 
-        {isLoading && (
-          <Card className="border-dashed">
-            <CardContent className="py-10 text-center text-muted-foreground">Chargement des concours…</CardContent>
-          </Card>
-        )}
+        {isLoading && <LoadingState message="Chargement des concours…" />}
 
         {error && (
-          <Card className="border-destructive">
-            <CardContent className="py-8 text-center text-destructive">
-              Impossible de charger les concours : {error.message}
-            </CardContent>
-          </Card>
+          <ErrorState
+            message={`Impossible de charger les concours : ${error.message}`}
+            onRetry={() => window.location.reload()}
+          />
         )}
 
         {!isLoading && !error && (
@@ -157,20 +155,13 @@ const Contests = () => {
               </Button>
             </div>
 
-            {isLoadingEntries && (
-              <Card className="border-dashed">
-                <CardContent className="py-10 text-center text-muted-foreground">
-                  Chargement des entrées…
-                </CardContent>
-              </Card>
-            )}
+            {isLoadingEntries && <LoadingState message="Chargement des entrées…" />}
 
             {entriesError && (
-              <Card className="border-destructive">
-                <CardContent className="py-8 text-center text-destructive">
-                  Impossible de charger les entrées : {entriesError.message}
-                </CardContent>
-              </Card>
+              <ErrorState
+                message={`Impossible de charger les entrées : ${entriesError.message}`}
+                onRetry={() => window.location.reload()}
+              />
             )}
 
             {!isLoadingEntries && !entriesError && (
@@ -212,6 +203,17 @@ const Contests = () => {
                           <p className="text-xs text-muted-foreground">{entry.publicVotesCount} vote(s)</p>
                         </div>
                       </CardContent>
+                      <CardContent className="pt-0 border-t">
+                        <Button
+                          variant="outline"
+                          className="w-full"
+                          asChild
+                        >
+                          <Link to={`/vote/${entry.id}`}>
+                            Voter pour cette entrée
+                          </Link>
+                        </Button>
+                      </CardContent>
                     </Card>
                   ))
                 ) : (
@@ -231,4 +233,3 @@ const Contests = () => {
 };
 
 export default Contests;
-
