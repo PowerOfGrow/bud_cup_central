@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { ArrowLeft, Plus, Edit, Trash2, Calendar, MapPin } from "lucide-react";
+import { ArrowLeft, Plus, Edit, Trash2, Calendar, MapPin, Users } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -539,6 +539,16 @@ const ManageContests = () => {
                                     </div>
                                   </div>
                                   <div className="flex gap-2">
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      asChild
+                                    >
+                                      <Link to={`/manage-contests/${contest.id}/judges`}>
+                                        <Users className="h-4 w-4 mr-1" />
+                                        Juges
+                                      </Link>
+                                    </Button>
                                     <Button
                                       variant="outline"
                                       size="sm"
