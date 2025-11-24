@@ -30,7 +30,7 @@
 
 ### 2.2 Gestion des entrées (Producteurs)
 - [x] Formulaire de soumission d'entrée
-- [ ] Upload de documents (COA, photos) - Simplifié, à compléter avec Supabase Storage
+- [x] Upload de documents (COA, photos) - Implémenté avec Supabase Storage
 - [x] Suivi du statut (brouillon → soumis → en revue → approuvé)
 - [x] Modification/Suppression des entrées en brouillon
 
@@ -43,8 +43,8 @@
 ### 2.4 Gestion des concours (Organisateurs)
 - [x] Création/Édition de concours
 - [x] Gestion des dates (inscription, jugement, résultats)
-- [ ] Assignation des juges
-- [ ] Publication des résultats
+- [x] Assignation des juges
+- [x] Publication des résultats
 
 ---
 
@@ -58,7 +58,7 @@
 
 ### 3.2 Optimisations Performance
 - [x] Code splitting (lazy loading des routes)
-- [ ] Optimisation des images (WebP, lazy loading)
+- [x] Optimisation des images (lazy loading, gestion d'erreurs)
 - [x] Mise en cache des requêtes fréquentes (React Query)
 - [x] Pagination pour les listes longues
 

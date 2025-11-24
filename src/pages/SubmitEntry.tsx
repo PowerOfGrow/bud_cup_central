@@ -34,6 +34,7 @@ import { LoadingState } from "@/components/LoadingState";
 import { ErrorState } from "@/components/ErrorState";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { useFileUpload } from "@/hooks/use-file-upload";
+import { OptimizedImage } from "@/components/OptimizedImage";
 
 const entrySchema = z.object({
   contest_id: z.string().uuid("Sélectionnez un concours"),
@@ -472,10 +473,11 @@ const SubmitEntry = () => {
                       <div className="mt-2 space-y-2">
                         {existingEntry?.photo_url && !photoFile && (
                           <div className="relative w-32 h-32 rounded-lg overflow-hidden border">
-                            <img
+                            <OptimizedImage
                               src={existingEntry.photo_url}
                               alt="Photo actuelle"
                               className="w-full h-full object-cover"
+                              lazy={false}
                             />
                           </div>
                         )}
