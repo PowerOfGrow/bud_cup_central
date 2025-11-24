@@ -84,9 +84,10 @@
 - [ ] Préférences de notification
 
 ### 4.3 Analytics & Reporting
-- [ ] Tableau de bord analytics pour organisateurs
-- [ ] Statistiques détaillées (participation, engagement)
-- [ ] Export de données (CSV, PDF)
+- [x] Tableau de bord analytics pour organisateurs
+- [x] Statistiques détaillées (participation, engagement)
+- [x] Export de données (CSV)
+- [ ] Export PDF
 
 ### 4.4 Social Features
 - [ ] Partage sur réseaux sociaux

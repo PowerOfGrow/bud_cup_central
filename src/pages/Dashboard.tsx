@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useViewerDashboard, useProducerDashboard, useJudgeDashboard } from "@/hooks/use-dashboard";
-import { Award, CheckCircle2, Clock3, Eye, Leaf, Scale, Shield, Star, Users } from "lucide-react";
+import { Award, CheckCircle2, Clock3, Eye, Leaf, Scale, Shield, Star, Users, BarChart3, Download, TrendingUp } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { LoadingState } from "@/components/LoadingState";
 import { ErrorState } from "@/components/ErrorState";
@@ -16,6 +16,8 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useConfirm } from "@/hooks/use-confirm";
+import { useOrganizerAnalytics } from "@/hooks/use-organizer-analytics";
+import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 
 
 const StatCard = ({
@@ -467,6 +469,228 @@ const JudgePanel = () => {
   );
 };
 
+const OrganizerPanel = () => {
+  const { data, isLoading, error } = useOrganizerAnalytics();
+
+  const exportToCSV = () => {
+    if (!data) return;
+
+    // Préparer les données pour l'export
+    const csvRows: string[] = [];
+    
+    // En-têtes
+    csvRows.push("Statistiques Globales");
+    csvRows.push(`Total Concours,${data.totalContests}`);
+    csvRows.push(`Concours Actifs,${data.activeContests}`);
+    csvRows.push(`Total Entrées,${data.totalEntries}`);
+    csvRows.push(`Total Producteurs,${data.totalProducers}`);
+    csvRows.push(`Total Juges,${data.totalJudges}`);
+    csvRows.push(`Total Votes,${data.totalVotes}`);
+    csvRows.push("");
+    
+    csvRows.push("Participation");
+    csvRows.push(`Producteurs Actifs,${data.participation.activeProducers}`);
+    csvRows.push(`Votants Actifs,${data.participation.activeVoters}`);
+    csvRows.push("");
+    
+    csvRows.push("Engagement");
+    csvRows.push(`Votes moyens par entrée,${data.engagement.averageVotesPerEntry}`);
+    csvRows.push(`Scores moyens par entrée,${data.engagement.averageScoresPerEntry}`);
+    csvRows.push(`Taux de complétion,${data.engagement.completionRate}%`);
+    csvRows.push("");
+    
+    csvRows.push("Statistiques par Concours");
+    csvRows.push("Nom,Statut,Entrées,Votes,Juges,Score Moyen");
+    data.contestsStats.forEach((contest) => {
+      csvRows.push(
+        `"${contest.name}",${contest.status},${contest.entriesCount},${contest.votesCount},${contest.judgesCount},${contest.averageScore || "N/A"}`
+      );
+    });
+
+    // Créer le fichier CSV
+    const csvContent = csvRows.join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `analytics-${new Date().toISOString().split("T")[0]}.csv`);
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  if (isLoading) {
+    return <LoadingState message="Chargement des analytics…" />;
+  }
+
+  if (error || !data) {
+    return <ErrorState message="Impossible de charger les analytics." />;
+  }
+
+  // Préparer les données pour les graphiques
+  const timelineData = data.timeline.map((item) => ({
+    date: new Date(item.date).toLocaleDateString("fr-FR", { month: "short", day: "numeric" }),
+    Entrées: item.entries,
+    Votes: item.votes,
+    Scores: item.scores,
+  }));
+
+  const contestsData = data.contestsStats.map((contest) => ({
+    name: contest.name.length > 20 ? contest.name.substring(0, 20) + "..." : contest.name,
+    Entrées: contest.entriesCount,
+    Votes: contest.votesCount,
+    "Score Moyen": contest.averageScore || 0,
+  }));
+
+  return (
+    <div className="space-y-10">
+      {/* Statistiques globales */}
+      <div className="grid gap-4 md:grid-cols-4">
+        <StatCard
+          icon={Award}
+          label="Total Concours"
+          value={data.totalContests}
+          hint={`${data.activeContests} actifs`}
+          accent="bg-accent/10 text-accent"
+        />
+        <StatCard
+          icon={Leaf}
+          label="Total Entrées"
+          value={data.totalEntries}
+          hint="Toutes éditions confondues"
+        />
+        <StatCard
+          icon={Users}
+          label="Producteurs"
+          value={data.participation.activeProducers}
+          hint={`${data.participation.totalProducers} au total`}
+        />
+        <StatCard
+          icon={Star}
+          label="Total Votes"
+          value={data.totalVotes}
+          hint="Votes publics"
+        />
+      </div>
+
+      {/* Engagement */}
+      <div className="grid gap-4 md:grid-cols-3">
+        <StatCard
+          icon={TrendingUp}
+          label="Votes/Entrée"
+          value={data.engagement.averageVotesPerEntry}
+          hint="Engagement moyen"
+        />
+        <StatCard
+          icon={BarChart3}
+          label="Scores/Entrée"
+          value={data.engagement.averageScoresPerEntry}
+          hint="Évaluations moyennes"
+        />
+        <StatCard
+          icon={CheckCircle2}
+          label="Complétion"
+          value={`${data.engagement.completionRate}%`}
+          hint="Entrées évaluées"
+        />
+      </div>
+
+      {/* Graphique d'évolution temporelle */}
+      <Card className="border-border/70">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Évolution (30 derniers jours)</CardTitle>
+              <CardDescription>Activité quotidienne sur la plateforme</CardDescription>
+            </div>
+            <Button variant="outline" size="sm" onClick={exportToCSV}>
+              <Download className="mr-2 h-4 w-4" />
+              Exporter CSV
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <ResponsiveContainer width="100%" height={300}>
+            <LineChart data={timelineData}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="date" />
+              <YAxis />
+              <Tooltip />
+              <Legend />
+              <Line type="monotone" dataKey="Entrées" stroke="hsl(var(--accent))" strokeWidth={2} />
+              <Line type="monotone" dataKey="Votes" stroke="hsl(var(--primary))" strokeWidth={2} />
+              <Line type="monotone" dataKey="Scores" stroke="hsl(var(--secondary))" strokeWidth={2} />
+            </LineChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
+
+      {/* Statistiques par concours */}
+      <SectionWrapper
+        title="Statistiques par concours"
+        description="Vue détaillée de chaque concours"
+      >
+        <Card className="border-border/70">
+          <CardContent className="p-6">
+            <ResponsiveContainer width="100%" height={400}>
+              <BarChart data={contestsData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" angle={-45} textAnchor="end" height={100} />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Bar dataKey="Entrées" fill="hsl(var(--accent))" />
+                <Bar dataKey="Votes" fill="hsl(var(--primary))" />
+                <Bar dataKey="Score Moyen" fill="hsl(var(--secondary))" />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      </SectionWrapper>
+
+      {/* Liste détaillée des concours */}
+      <SectionWrapper
+        title="Détails par concours"
+        description="Tableau récapitulatif de tous les concours"
+      >
+        <div className="grid gap-4">
+          {data.contestsStats.map((contest) => (
+            <Card key={contest.id} className="border-border/60">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-lg">{contest.name}</CardTitle>
+                  <Badge variant="secondary" className="capitalize">{contest.status}</Badge>
+                </div>
+              </CardHeader>
+              <CardContent className="grid gap-4 md:grid-cols-4">
+                <div className="rounded-xl bg-muted/50 p-4">
+                  <p className="text-xs text-muted-foreground mb-1">Entrées</p>
+                  <p className="text-lg font-semibold text-foreground">{contest.entriesCount}</p>
+                </div>
+                <div className="rounded-xl bg-muted/50 p-4">
+                  <p className="text-xs text-muted-foreground mb-1">Votes</p>
+                  <p className="text-lg font-semibold text-foreground">{contest.votesCount}</p>
+                </div>
+                <div className="rounded-xl bg-muted/50 p-4">
+                  <p className="text-xs text-muted-foreground mb-1">Juges</p>
+                  <p className="text-lg font-semibold text-foreground">{contest.judgesCount}</p>
+                </div>
+                <div className="rounded-xl bg-muted/50 p-4">
+                  <p className="text-xs text-muted-foreground mb-1">Score moyen</p>
+                  <p className="text-lg font-semibold text-foreground">
+                    {contest.averageScore ? `${contest.averageScore}/100` : "N/A"}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </SectionWrapper>
+    </div>
+  );
+};
+
 const CalendarIcon = Clock3;
 
 const Dashboard = () => {
@@ -476,6 +700,8 @@ const Dashboard = () => {
   const defaultTab = useMemo(() => {
     if (!profile) return "viewer";
     switch (profile.role) {
+      case "organizer":
+        return "organizer";
       case "producer":
         return "producer";
       case "judge":
@@ -491,6 +717,9 @@ const Dashboard = () => {
     const tabs: string[] = [];
     // Tous les utilisateurs peuvent voir leur propre dashboard viewer
     tabs.push("viewer");
+    if (profile.role === "organizer") {
+      tabs.push("organizer");
+    }
     if (profile.role === "producer" || profile.role === "organizer") {
       tabs.push("producer");
     }
@@ -512,10 +741,21 @@ const Dashboard = () => {
         </div>
 
         <Tabs defaultValue={defaultTab} className="space-y-10">
-          <TabsList className="grid grid-cols-1 md:grid-cols-3 gap-2 bg-muted/40">
+          <TabsList className={`grid gap-2 bg-muted/40 ${
+            availableTabs.length === 4 
+              ? "grid-cols-2 md:grid-cols-4" 
+              : availableTabs.length === 3
+              ? "grid-cols-1 md:grid-cols-3"
+              : "grid-cols-1 md:grid-cols-2"
+          }`}>
             {availableTabs.includes("viewer") && (
               <TabsTrigger value="viewer" className="data-[state=active]:bg-background">
                 <Eye className="mr-2 h-4 w-4" /> Membre gratuit
+              </TabsTrigger>
+            )}
+            {availableTabs.includes("organizer") && (
+              <TabsTrigger value="organizer" className="data-[state=active]:bg-background">
+                <BarChart3 className="mr-2 h-4 w-4" /> Analytics
               </TabsTrigger>
             )}
             {availableTabs.includes("producer") && (
@@ -533,6 +773,12 @@ const Dashboard = () => {
           {availableTabs.includes("viewer") && (
             <TabsContent value="viewer">
               <ViewerPanel />
+            </TabsContent>
+          )}
+
+          {availableTabs.includes("organizer") && (
+            <TabsContent value="organizer">
+              <OrganizerPanel />
             </TabsContent>
           )}
 
