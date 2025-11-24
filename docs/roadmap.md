@@ -66,7 +66,7 @@
 - [x] Amélioration du contraste (WCAG AA)
 - [x] Navigation au clavier (focus visible, skip links)
 - [x] Support des lecteurs d'écran (ARIA labels, roles)
-- [ ] Tests sur tous les breakpoints
+- [x] Tests sur tous les breakpoints (Playwright)
 
 ---
 
@@ -101,7 +101,7 @@
 
 ### 5.1 Tests
 - [x] Tests unitaires (Vitest) - Configuration et premiers tests (hooks, composants)
-- [ ] Tests d'intégration
+- [x] Tests d'intégration - Tests de flux (auth, entries)
 - [x] Tests E2E (Playwright)
 
 ### 5.2 CI/CD
@@ -112,8 +112,8 @@
 
 ### 5.3 Monitoring
 - [x] Logging des erreurs (Sentry)
-- [ ] Analytics (Google Analytics ou Plausible)
-- [ ] Monitoring des performances (Vercel Analytics)
+- [x] Monitoring des performances (Vercel Analytics)
+- [ ] Analytics (Google Analytics ou Plausible) - Optionnel
 
 ### 5.4 Documentation
 - [x] Documentation API
