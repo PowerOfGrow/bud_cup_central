@@ -100,7 +100,7 @@
 ## 🔵 Priorité 5 : Infrastructure & DevOps
 
 ### 5.1 Tests
-- [ ] Tests unitaires (Vitest)
+- [x] Tests unitaires (Vitest) - Configuration et premiers tests (hooks, composants)
 - [ ] Tests d'intégration
 - [ ] Tests E2E (Playwright)
 

@@ -15,6 +15,8 @@ Bienvenue dans la documentation du projet CBD Flower Cup. Cette documentation es
 - **[Edge Functions](./edge-functions.md)** - Documentation des fonctions serverless Supabase
 - **[Variables d'environnement Vercel](./vercel-env-vars.md)** - Configuration des variables d'environnement pour Vercel
 - **[Secrets Supabase](./supabase-secrets.md)** - Gestion des secrets et clés API Supabase
+- **[Configuration Resend](./RESEND_SETUP.md)** - Guide de configuration de l'API Resend pour les emails
+- **[Tests](./TESTING.md)** - Guide de tests unitaires avec Vitest
 
 ## 🚀 Démarrage Rapide
 
