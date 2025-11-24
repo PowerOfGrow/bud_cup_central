@@ -1,16 +1,15 @@
-import { type ComponentType } from "react";
+import { type ComponentType, useMemo } from "react";
+import { Link } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useViewerDashboard, useProducerDashboard, useJudgeDashboard } from "@/hooks/use-dashboard";
 import { Award, CheckCircle2, Clock3, Eye, Leaf, Scale, Shield, Star, Users } from "lucide-react";
+import { useAuth } from "@/hooks/use-auth";
+import { LoadingState } from "@/components/LoadingState";
+import { ErrorState } from "@/components/ErrorState";
 
-const DEFAULT_PROFILES = {
-  viewer: import.meta.env.VITE_VIEWER_PROFILE_ID ?? "f7777777-7777-7777-7777-777777777777",
-  producer: import.meta.env.VITE_PRODUCER_PROFILE_ID ?? "b2222222-2222-2222-2222-222222222222",
-  judge: import.meta.env.VITE_JUDGE_PROFILE_ID ?? "d4444444-4444-4444-4444-444444444444",
-};
 
 const StatCard = ({
   icon: Icon,
@@ -58,15 +57,16 @@ const SectionWrapper = ({
 );
 
 const ViewerPanel = () => {
-  const viewerId = DEFAULT_PROFILES.viewer;
+  const { profile } = useAuth();
+  const viewerId = profile?.id;
   const { data, isLoading, error } = useViewerDashboard(viewerId);
 
   if (isLoading) {
-    return <Card className="border-dashed"><CardContent className="py-12 text-center text-muted-foreground">Chargement des favoris communautaires…</CardContent></Card>;
+    return <LoadingState message="Chargement des favoris communautaires…" />;
   }
 
   if (error || !data) {
-    return <Card className="border-destructive"><CardContent className="py-12 text-center text-destructive">Impossible de charger les données membre.</CardContent></Card>;
+    return <ErrorState message="Impossible de charger les données membre." />;
   }
 
   return (
@@ -145,15 +145,16 @@ const ViewerPanel = () => {
 };
 
 const ProducerPanel = () => {
-  const producerId = DEFAULT_PROFILES.producer;
+  const { profile } = useAuth();
+  const producerId = profile?.id;
   const { data, isLoading, error } = useProducerDashboard(producerId);
 
   if (isLoading) {
-    return <Card className="border-dashed"><CardContent className="py-12 text-center text-muted-foreground">Analyse de vos entrées…</CardContent></Card>;
+    return <LoadingState message="Analyse de vos entrées…" />;
   }
 
   if (error || !data) {
-    return <Card className="border-destructive"><CardContent className="py-12 text-center text-destructive">Impossible de charger les données producteur.</CardContent></Card>;
+    return <ErrorState message="Impossible de charger les données producteur." />;
   }
 
   return (
@@ -176,8 +177,9 @@ const ProducerPanel = () => {
             </p>
           </div>
           <div className="flex gap-3">
-            <Button variant="outline">Téléverser un COA</Button>
-            <Button>Soumettre une nouvelle fleur</Button>
+            <Button variant="outline" asChild>
+              <Link to="/submit-entry">Soumettre une nouvelle fleur</Link>
+            </Button>
           </div>
         </CardContent>
       </Card>
@@ -238,15 +240,16 @@ const ProducerPanel = () => {
 };
 
 const JudgePanel = () => {
-  const judgeId = DEFAULT_PROFILES.judge;
+  const { profile } = useAuth();
+  const judgeId = profile?.id;
   const { data, isLoading, error } = useJudgeDashboard(judgeId);
 
   if (isLoading) {
-    return <Card className="border-dashed"><CardContent className="py-12 text-center text-muted-foreground">Préparation de la table jury…</CardContent></Card>;
+    return <LoadingState message="Préparation de la table jury…" />;
   }
 
   if (error || !data) {
-    return <Card className="border-destructive"><CardContent className="py-12 text-center text-destructive">Impossible de charger les données jury.</CardContent></Card>;
+    return <ErrorState message="Impossible de charger les données jury." />;
   }
 
   return (
@@ -278,7 +281,11 @@ const JudgePanel = () => {
                   <p className="text-sm text-muted-foreground">
                     {assignment.contest?.location ?? "Lieu communiqué ultérieurement"}
                   </p>
-                  <Button variant="secondary">Ouvrir la feuille de route</Button>
+                  <Button variant="secondary" asChild>
+                    <Link to={`/contests`}>
+                      Voir les entrées à évaluer
+                    </Link>
+                  </Button>
                 </CardContent>
               </Card>
             ))
@@ -326,45 +333,89 @@ const JudgePanel = () => {
 
 const CalendarIcon = Clock3;
 
-const Dashboard = () => (
-  <div className="min-h-screen bg-background pt-28 pb-16">
-    <div className="container mx-auto px-4">
-      <div className="max-w-3xl mx-auto text-center mb-12">
-        <Badge className="mb-4 bg-gradient-gold text-foreground/80">Espace membre</Badge>
-        <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-4">Tableaux de bord optimisés</h1>
-        <p className="text-muted-foreground text-lg">
-          Vue unifiée pour les membres gratuits, producteurs et jurés. Sélectionnez votre rôle pour accéder à vos indicateurs clés.
-        </p>
+const Dashboard = () => {
+  const { profile } = useAuth();
+
+  // Déterminer l'onglet par défaut selon le rôle de l'utilisateur
+  const defaultTab = useMemo(() => {
+    if (!profile) return "viewer";
+    switch (profile.role) {
+      case "producer":
+        return "producer";
+      case "judge":
+        return "judge";
+      default:
+        return "viewer";
+    }
+  }, [profile]);
+
+  // Déterminer quels onglets afficher selon le rôle
+  const availableTabs = useMemo(() => {
+    if (!profile) return ["viewer"];
+    const tabs: string[] = [];
+    // Tous les utilisateurs peuvent voir leur propre dashboard viewer
+    tabs.push("viewer");
+    if (profile.role === "producer" || profile.role === "organizer") {
+      tabs.push("producer");
+    }
+    if (profile.role === "judge" || profile.role === "organizer") {
+      tabs.push("judge");
+    }
+    return tabs;
+  }, [profile]);
+
+  return (
+    <div className="min-h-screen bg-background pt-28 pb-16">
+      <div className="container mx-auto px-4">
+        <div className="max-w-3xl mx-auto text-center mb-12">
+          <Badge className="mb-4 bg-gradient-gold text-foreground/80">Espace membre</Badge>
+          <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-4">Tableaux de bord optimisés</h1>
+          <p className="text-muted-foreground text-lg">
+            Vue unifiée pour les membres gratuits, producteurs et jurés. Sélectionnez votre rôle pour accéder à vos indicateurs clés.
+          </p>
+        </div>
+
+        <Tabs defaultValue={defaultTab} className="space-y-10">
+          <TabsList className="grid grid-cols-1 md:grid-cols-3 gap-2 bg-muted/40">
+            {availableTabs.includes("viewer") && (
+              <TabsTrigger value="viewer" className="data-[state=active]:bg-background">
+                <Eye className="mr-2 h-4 w-4" /> Membre gratuit
+              </TabsTrigger>
+            )}
+            {availableTabs.includes("producer") && (
+              <TabsTrigger value="producer" className="data-[state=active]:bg-background">
+                <Leaf className="mr-2 h-4 w-4" /> Producteur
+              </TabsTrigger>
+            )}
+            {availableTabs.includes("judge") && (
+              <TabsTrigger value="judge" className="data-[state=active]:bg-background">
+                <Scale className="mr-2 h-4 w-4" /> Jury
+              </TabsTrigger>
+            )}
+          </TabsList>
+
+          {availableTabs.includes("viewer") && (
+            <TabsContent value="viewer">
+              <ViewerPanel />
+            </TabsContent>
+          )}
+
+          {availableTabs.includes("producer") && (
+            <TabsContent value="producer">
+              <ProducerPanel />
+            </TabsContent>
+          )}
+
+          {availableTabs.includes("judge") && (
+            <TabsContent value="judge">
+              <JudgePanel />
+            </TabsContent>
+          )}
+        </Tabs>
       </div>
-
-      <Tabs defaultValue="viewer" className="space-y-10">
-        <TabsList className="grid grid-cols-1 md:grid-cols-3 gap-2 bg-muted/40">
-          <TabsTrigger value="viewer" className="data-[state=active]:bg-background">
-            <Eye className="mr-2 h-4 w-4" /> Membre gratuit
-          </TabsTrigger>
-          <TabsTrigger value="producer" className="data-[state=active]:bg-background">
-            <Leaf className="mr-2 h-4 w-4" /> Producteur
-          </TabsTrigger>
-          <TabsTrigger value="judge" className="data-[state=active]:bg-background">
-            <Scale className="mr-2 h-4 w-4" /> Jury
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="viewer">
-          <ViewerPanel />
-        </TabsContent>
-
-        <TabsContent value="producer">
-          <ProducerPanel />
-        </TabsContent>
-
-        <TabsContent value="judge">
-          <JudgePanel />
-        </TabsContent>
-      </Tabs>
     </div>
-  </div>
-);
+  );
+};
 
 export default Dashboard;
 

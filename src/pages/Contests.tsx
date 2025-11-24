@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Award, CalendarDays, MapPin, Users } from "lucide-react";
+import { Award, CalendarDays, MapPin, Users, Scale } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -7,6 +7,7 @@ import { useContests, useContestEntries } from "@/hooks/use-contests";
 import { LoadingState } from "@/components/LoadingState";
 import { ErrorState } from "@/components/ErrorState";
 import { Link } from "react-router-dom";
+import { useAuth } from "@/hooks/use-auth";
 
 const statusLabel: Record<string, string> = {
   registration: "Inscriptions ouvertes",
@@ -24,6 +25,7 @@ const statusTone: Record<string, string> = {
 
 const Contests = () => {
   const { data: contests, isLoading, error } = useContests();
+  const { profile } = useAuth();
   const [selectedContestId, setSelectedContestId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -204,15 +206,29 @@ const Contests = () => {
                         </div>
                       </CardContent>
                       <CardContent className="pt-0 border-t">
-                        <Button
-                          variant="outline"
-                          className="w-full"
-                          asChild
-                        >
-                          <Link to={`/vote/${entry.id}`}>
-                            Voter pour cette entrée
-                          </Link>
-                        </Button>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            className="flex-1"
+                            asChild
+                          >
+                            <Link to={`/vote/${entry.id}`}>
+                              Voter
+                            </Link>
+                          </Button>
+                          {(profile?.role === "judge" || profile?.role === "organizer") && (
+                            <Button
+                              variant="default"
+                              className="flex-1"
+                              asChild
+                            >
+                              <Link to={`/judge-evaluation/${entry.id}`}>
+                                <Scale className="mr-2 h-4 w-4" />
+                                Évaluer
+                              </Link>
+                            </Button>
+                          )}
+                        </div>
                       </CardContent>
                     </Card>
                   ))
