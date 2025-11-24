@@ -1,4 +1,4 @@
-import { type ComponentType, useMemo } from "react";
+import React, { type ComponentType, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -17,9 +17,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useConfirm } from "@/hooks/use-confirm";
 import { useOrganizerAnalytics } from "@/hooks/use-organizer-analytics";
-import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
+import { OrganizerCharts } from "@/components/OrganizerCharts";
+// Lazy load des bibliothèques lourdes uniquement pour OrganizerPanel
 
 
 const StatCard = ({
@@ -522,8 +521,14 @@ const OrganizerPanel = () => {
     document.body.removeChild(link);
   };
 
-  const exportToPDF = () => {
+  const exportToPDF = async () => {
     if (!data) return;
+
+    // Lazy load jspdf uniquement quand nécessaire
+    const [{ default: jsPDF }, { default: autoTable }] = await Promise.all([
+      import("jspdf"),
+      import("jspdf-autotable")
+    ]);
 
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
@@ -759,64 +764,26 @@ const OrganizerPanel = () => {
         />
       </div>
 
-      {/* Graphique d'évolution temporelle */}
-      <Card className="border-border/70">
-        <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle>Évolution (30 derniers jours)</CardTitle>
-                <CardDescription>Activité quotidienne sur la plateforme</CardDescription>
-              </div>
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={exportToCSV}>
-                  <Download className="mr-2 h-4 w-4" />
-                  CSV
-                </Button>
-                <Button variant="outline" size="sm" onClick={exportToPDF}>
-                  <FileText className="mr-2 h-4 w-4" />
-                  PDF
-                </Button>
-              </div>
-            </div>
-        </CardHeader>
-        <CardContent>
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={timelineData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="date" />
-              <YAxis />
-              <Tooltip />
-              <Legend />
-              <Line type="monotone" dataKey="Entrées" stroke="hsl(var(--accent))" strokeWidth={2} />
-              <Line type="monotone" dataKey="Votes" stroke="hsl(var(--primary))" strokeWidth={2} />
-              <Line type="monotone" dataKey="Scores" stroke="hsl(var(--secondary))" strokeWidth={2} />
-            </LineChart>
-          </ResponsiveContainer>
-        </CardContent>
-      </Card>
-
-      {/* Statistiques par concours */}
-      <SectionWrapper
-        title="Statistiques par concours"
-        description="Vue détaillée de chaque concours"
-      >
-        <Card className="border-border/70">
-          <CardContent className="p-6">
-            <ResponsiveContainer width="100%" height={400}>
-              <BarChart data={contestsData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" angle={-45} textAnchor="end" height={100} />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="Entrées" fill="hsl(var(--accent))" />
-                <Bar dataKey="Votes" fill="hsl(var(--primary))" />
-                <Bar dataKey="Score Moyen" fill="hsl(var(--secondary))" />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-      </SectionWrapper>
+      {/* Graphiques avec lazy loading */}
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-xl font-semibold text-foreground">Graphiques Analytics</h3>
+            <p className="text-sm text-muted-foreground">Visualisation des données</p>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={exportToCSV}>
+              <Download className="mr-2 h-4 w-4" />
+              CSV
+            </Button>
+            <Button variant="outline" size="sm" onClick={exportToPDF}>
+              <FileText className="mr-2 h-4 w-4" />
+              PDF
+            </Button>
+          </div>
+        </div>
+        <OrganizerCharts timelineData={timelineData} contestsData={contestsData} />
+      </div>
 
       {/* Liste détaillée des concours */}
       <SectionWrapper
