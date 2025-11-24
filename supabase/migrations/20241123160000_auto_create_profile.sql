@@ -7,6 +7,7 @@ as $$
 declare
   display_name_value text;
   role_value profile_role;
+  role_text text;
 begin
   -- Récupérer le display_name depuis les metadata de l'utilisateur
   display_name_value := coalesce(
@@ -15,10 +16,14 @@ begin
   );
 
   -- Récupérer le rôle depuis les metadata, sinon utiliser 'viewer' par défaut
-  role_value := coalesce(
-    (new.raw_user_meta_data->>'role')::profile_role,
-    'viewer'::profile_role
-  );
+  role_text := new.raw_user_meta_data->>'role';
+  
+  -- Vérifier si le rôle est valide, sinon utiliser 'viewer' par défaut
+  if role_text in ('organizer', 'producer', 'judge', 'viewer') then
+    role_value := role_text::profile_role;
+  else
+    role_value := 'viewer'::profile_role;
+  end if;
 
   -- Créer le profil dans la table profiles
   insert into public.profiles (id, display_name, role)
@@ -38,4 +43,3 @@ drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
   after insert on auth.users
   for each row execute procedure public.handle_new_user();
-
