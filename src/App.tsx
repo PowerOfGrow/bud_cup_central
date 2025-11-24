@@ -18,7 +18,7 @@ const About = lazy(() => import("./pages/About"));
 const Vote = lazy(() => import("./pages/Vote"));
 const SubmitEntry = lazy(() => import("./pages/SubmitEntry"));
 const JudgeEvaluation = lazy(() => import("./pages/JudgeEvaluation"));
-const ManageContests = lazy(() => import("./pages/ManageContests"));
+const ManageContestsPage = lazy(() => import("./pages/ManageContests"));
 const ManageContestJudges = lazy(() => import("./pages/ManageContestJudges"));
 const ContestResults = lazy(() => import("./pages/ContestResults"));
 const Notifications = lazy(() => import("./pages/Notifications"));
@@ -76,7 +76,7 @@ const App = () => (
           />
           <Route
             path="/manage-contests"
-            element={<ManageContests />}
+            element={<ManageContestsPage />}
           />
           <Route
             path="/manage-contests/:contestId/judges"

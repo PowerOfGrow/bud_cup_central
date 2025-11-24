@@ -216,18 +216,8 @@ const ManageContests = () => {
     setEditingContestId(null);
   };
 
-  if (!user || !profile || profile.role !== "organizer") {
-    return (
-      <div className="min-h-screen">
-        <Header />
-        <div className="pt-28 pb-16">
-          <div className="container mx-auto px-4">
-            <ErrorState message="Seuls les organisateurs peuvent gérer les concours" />
-          </div>
-        </div>
-      </div>
-    );
-  }
+  // La vérification du rôle est gérée par ProtectedRoute dans ManageContestsPage
+  // Pas besoin de vérifier ici pour éviter les problèmes de hooks
 
   const statusLabels: Record<string, string> = {
     draft: "Brouillon",
