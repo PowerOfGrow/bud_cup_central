@@ -196,13 +196,27 @@ const Contests = () => {
                     </div>
                   </div>
 
-                  <Button
-                    variant={selectedContestId === contest.id ? "default" : "outline"}
-                    className="w-full"
-                    onClick={() => setSelectedContestId(contest.id)}
-                  >
-                    Voir les entrées
-                  </Button>
+                         <div className="flex gap-2">
+                           <Button
+                             variant={selectedContestId === contest.id ? "default" : "outline"}
+                             className="flex-1"
+                             onClick={() => setSelectedContestId(contest.id)}
+                           >
+                             Voir les entrées
+                           </Button>
+                           {contest.status === "completed" && (
+                             <Button
+                               variant="default"
+                               className="bg-gradient-gold"
+                               asChild
+                             >
+                               <Link to={`/contests/${contest.id}/results`}>
+                                 <Trophy className="mr-2 h-4 w-4" />
+                                 Résultats
+                               </Link>
+                             </Button>
+                           )}
+                         </div>
                 </CardContent>
               </Card>
             ))}
