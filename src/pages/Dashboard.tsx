@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useViewerDashboard, useProducerDashboard, useJudgeDashboard } from "@/hooks/use-dashboard";
-import { Award, CheckCircle2, Clock3, Eye, Leaf, Scale, Shield, Star, Users, BarChart3, Download, TrendingUp, FileText } from "lucide-react";
+import { Award, CheckCircle2, Clock3, Eye, Leaf, Scale, Shield, Star, Users, BarChart3, Download, TrendingUp, FileText, Settings, Calendar, UserPlus, Trophy, ListChecks, LayoutDashboard, Plus, Search } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { LoadingState } from "@/components/LoadingState";
 import { ErrorState } from "@/components/ErrorState";
@@ -81,6 +81,50 @@ const ViewerPanel = () => {
 
   return (
     <div className="space-y-10">
+      {/* Menu de navigation rapide pour viewers */}
+      <Card className="border-border/70 bg-muted/40">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <LayoutDashboard className="h-5 w-5" />
+            Actions rapides
+          </CardTitle>
+          <CardDescription>
+            Accès rapide aux fonctionnalités membre
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
+            <Button variant="outline" className="h-auto flex-col items-start justify-start p-4" asChild>
+              <Link to="/contests">
+                <ListChecks className="mr-2 h-5 w-5 mb-2" />
+                <span className="font-semibold">Voir les concours</span>
+                <span className="text-xs text-muted-foreground mt-1">Voter et découvrir</span>
+              </Link>
+            </Button>
+            <Button variant="outline" className="h-auto flex-col items-start justify-start p-4" asChild>
+              <Link to="/favorites">
+                <Star className="mr-2 h-5 w-5 mb-2" />
+                <span className="font-semibold">Mes favoris</span>
+                <span className="text-xs text-muted-foreground mt-1">{data.totalVotes} favoris</span>
+              </Link>
+            </Button>
+            <Button variant="outline" className="h-auto flex-col items-start justify-start p-4" asChild>
+              <Link to="/search">
+                <Search className="mr-2 h-5 w-5 mb-2" />
+                <span className="font-semibold">Recherche</span>
+                <span className="text-xs text-muted-foreground mt-1">Recherche globale</span>
+              </Link>
+            </Button>
+            <Button variant="outline" className="h-auto flex-col items-start justify-start p-4" asChild>
+              <Link to="/settings">
+                <Settings className="mr-2 h-5 w-5 mb-2" />
+                <span className="font-semibold">Paramètres</span>
+                <span className="text-xs text-muted-foreground mt-1">Notifications</span>
+              </Link>
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
       <div className="grid gap-4 md:grid-cols-3">
         <StatCard icon={Star} label="Votes déposés" value={data.totalVotes} hint="Participation aux classements" />
         <StatCard icon={Award} label="Note moyenne" value={data.averageScore ? `${data.averageScore}/5` : "—"} hint="Basée sur vos votes" accent="bg-gradient-gold text-foreground" />
@@ -393,6 +437,44 @@ const JudgePanel = () => {
 
   return (
     <div className="space-y-10">
+      {/* Menu de navigation rapide pour juges */}
+      <Card className="border-border/70 bg-muted/40">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <LayoutDashboard className="h-5 w-5" />
+            Actions rapides
+          </CardTitle>
+          <CardDescription>
+            Accès rapide aux fonctionnalités juge
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+            <Button variant="outline" className="h-auto flex-col items-start justify-start p-4" asChild>
+              <Link to="/contests">
+                <ListChecks className="h-5 w-5 mb-2" />
+                <span className="font-semibold">Voir les concours</span>
+                <span className="text-xs text-muted-foreground mt-1">Mes assignations</span>
+              </Link>
+            </Button>
+            <Button variant="outline" className="h-auto flex-col items-start justify-start p-4" asChild>
+              <Link to="/dashboard">
+                <BarChart3 className="h-5 w-5 mb-2" />
+                <span className="font-semibold">Mes statistiques</span>
+                <span className="text-xs text-muted-foreground mt-1">Voir ce panel</span>
+              </Link>
+            </Button>
+            <Button variant="outline" className="h-auto flex-col items-start justify-start p-4" asChild>
+              <Link to="/settings">
+                <Settings className="h-5 w-5 mb-2" />
+                <span className="font-semibold">Paramètres</span>
+                <span className="text-xs text-muted-foreground mt-1">Notifications</span>
+              </Link>
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
       <div className="grid gap-4 md:grid-cols-3">
         <StatCard icon={Users} label="Concours assignés" value={data.assignments.length} hint="Éditions où vous êtes juré" accent="bg-accent/10 text-accent" />
         <StatCard icon={Award} label="Fiches notées" value={data.stats.totalReviews} hint="Sur les 30 derniers jours" accent="bg-accent/10 text-accent" />
@@ -713,6 +795,51 @@ const OrganizerPanel = () => {
 
   return (
     <div className="space-y-10">
+      {/* Menu de navigation rapide pour organisateurs */}
+      <Card className="border-border/70 bg-muted/40">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <LayoutDashboard className="h-5 w-5" />
+            Gestion de l'événement
+          </CardTitle>
+          <CardDescription>
+            Accès rapide à toutes les fonctionnalités de gestion
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
+            <Button variant="outline" className="h-auto flex-col items-start justify-start p-4" asChild>
+              <Link to="/manage-contests">
+                <Calendar className="h-5 w-5 mb-2" />
+                <span className="font-semibold">Gérer les concours</span>
+                <span className="text-xs text-muted-foreground mt-1">Créer, modifier, supprimer</span>
+              </Link>
+            </Button>
+            <Button variant="outline" className="h-auto flex-col items-start justify-start p-4" asChild>
+              <Link to="/dashboard">
+                <BarChart3 className="h-5 w-5 mb-2" />
+                <span className="font-semibold">Analytics</span>
+                <span className="text-xs text-muted-foreground mt-1">Statistiques et rapports</span>
+              </Link>
+            </Button>
+            <Button variant="outline" className="h-auto flex-col items-start justify-start p-4" asChild>
+              <Link to="/contests">
+                <ListChecks className="h-5 w-5 mb-2" />
+                <span className="font-semibold">Voir les concours</span>
+                <span className="text-xs text-muted-foreground mt-1">Liste publique</span>
+              </Link>
+            </Button>
+            <Button variant="outline" className="h-auto flex-col items-start justify-start p-4" asChild>
+              <Link to="/settings">
+                <Settings className="h-5 w-5 mb-2" />
+                <span className="font-semibold">Paramètres</span>
+                <span className="text-xs text-muted-foreground mt-1">Notifications</span>
+              </Link>
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Statistiques globales */}
       <div className="grid gap-4 md:grid-cols-4">
         <StatCard
@@ -785,38 +912,69 @@ const OrganizerPanel = () => {
         <OrganizerCharts timelineData={timelineData} contestsData={contestsData} />
       </div>
 
-      {/* Liste détaillée des concours */}
+      {/* Liste détaillée des concours avec actions */}
       <SectionWrapper
         title="Détails par concours"
-        description="Tableau récapitulatif de tous les concours"
+        description="Tableau récapitulatif de tous les concours avec actions de gestion"
       >
         <div className="grid gap-4">
           {data.contestsStats.map((contest) => (
             <Card key={contest.id} className="border-border/60">
               <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-lg">{contest.name}</CardTitle>
+                <div className="flex items-center justify-between flex-wrap gap-4">
+                  <div>
+                    <CardTitle className="text-lg">{contest.name}</CardTitle>
+                    <p className="text-sm text-muted-foreground mt-1">ID: {contest.id}</p>
+                  </div>
                   <Badge variant="secondary" className="capitalize">{contest.status}</Badge>
                 </div>
               </CardHeader>
-              <CardContent className="grid gap-4 md:grid-cols-4">
-                <div className="rounded-xl bg-muted/50 p-4">
-                  <p className="text-xs text-muted-foreground mb-1">Entrées</p>
-                  <p className="text-lg font-semibold text-foreground">{contest.entriesCount}</p>
+              <CardContent className="space-y-4">
+                <div className="grid gap-4 md:grid-cols-4">
+                  <div className="rounded-xl bg-muted/50 p-4">
+                    <p className="text-xs text-muted-foreground mb-1">Entrées</p>
+                    <p className="text-lg font-semibold text-foreground">{contest.entriesCount}</p>
+                  </div>
+                  <div className="rounded-xl bg-muted/50 p-4">
+                    <p className="text-xs text-muted-foreground mb-1">Votes</p>
+                    <p className="text-lg font-semibold text-foreground">{contest.votesCount}</p>
+                  </div>
+                  <div className="rounded-xl bg-muted/50 p-4">
+                    <p className="text-xs text-muted-foreground mb-1">Juges</p>
+                    <p className="text-lg font-semibold text-foreground">{contest.judgesCount}</p>
+                  </div>
+                  <div className="rounded-xl bg-muted/50 p-4">
+                    <p className="text-xs text-muted-foreground mb-1">Score moyen</p>
+                    <p className="text-lg font-semibold text-foreground">
+                      {contest.averageScore ? `${contest.averageScore}/100` : "N/A"}
+                    </p>
+                  </div>
                 </div>
-                <div className="rounded-xl bg-muted/50 p-4">
-                  <p className="text-xs text-muted-foreground mb-1">Votes</p>
-                  <p className="text-lg font-semibold text-foreground">{contest.votesCount}</p>
-                </div>
-                <div className="rounded-xl bg-muted/50 p-4">
-                  <p className="text-xs text-muted-foreground mb-1">Juges</p>
-                  <p className="text-lg font-semibold text-foreground">{contest.judgesCount}</p>
-                </div>
-                <div className="rounded-xl bg-muted/50 p-4">
-                  <p className="text-xs text-muted-foreground mb-1">Score moyen</p>
-                  <p className="text-lg font-semibold text-foreground">
-                    {contest.averageScore ? `${contest.averageScore}/100` : "N/A"}
-                  </p>
+                <div className="flex flex-wrap gap-2 pt-2 border-t">
+                  <Button variant="outline" size="sm" asChild>
+                    <Link to={`/manage-contests/${contest.id}/judges`}>
+                      <UserPlus className="mr-2 h-4 w-4" />
+                      Gérer les juges
+                    </Link>
+                  </Button>
+                  <Button variant="outline" size="sm" asChild>
+                    <Link to={`/contests/${contest.id}/results`}>
+                      <Trophy className="mr-2 h-4 w-4" />
+                      Voir les résultats
+                    </Link>
+                  </Button>
+                  <Button variant="outline" size="sm" asChild>
+                    <Link to={`/contests?contest=${contest.id}`}>
+                      <ListChecks className="mr-2 h-4 w-4" />
+                      Voir les entrées
+                    </Link>
+                  </Button>
+                  <Button variant="outline" size="sm" asChild>
+                    <Link to="/manage-contests">
+                      <Settings className="mr-2 h-4 w-4" />
+                      Modifier le concours
+                    </Link>
+                  </Button>
                 </div>
               </CardContent>
             </Card>
