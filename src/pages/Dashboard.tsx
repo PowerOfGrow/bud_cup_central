@@ -385,6 +385,44 @@ const ProducerPanel = () => {
 
   return (
     <div className="space-y-10">
+      {/* Menu de navigation rapide pour producteurs */}
+      <Card className="border-border/70 bg-muted/40">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <LayoutDashboard className="h-5 w-5" />
+            Actions rapides
+          </CardTitle>
+          <CardDescription>
+            Accès rapide aux fonctionnalités producteur
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+            <Button variant="outline" className="h-auto flex-col items-start justify-start p-4" asChild>
+              <Link to="/submit-entry">
+                <Plus className="h-5 w-5 mb-2" />
+                <span className="font-semibold">Soumettre une entrée</span>
+                <span className="text-xs text-muted-foreground mt-1">Nouvelle candidature</span>
+              </Link>
+            </Button>
+            <Button variant="outline" className="h-auto flex-col items-start justify-start p-4" asChild>
+              <Link to="/contests">
+                <ListChecks className="h-5 w-5 mb-2" />
+                <span className="font-semibold">Voir les concours</span>
+                <span className="text-xs text-muted-foreground mt-1">Concours disponibles</span>
+              </Link>
+            </Button>
+            <Button variant="outline" className="h-auto flex-col items-start justify-start p-4" asChild>
+              <Link to="/settings">
+                <Settings className="h-5 w-5 mb-2" />
+                <span className="font-semibold">Paramètres</span>
+                <span className="text-xs text-muted-foreground mt-1">Notifications</span>
+              </Link>
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
       <div className="grid gap-4 md:grid-cols-4">
         <StatCard icon={Leaf} label="Entrées totales" value={data.totals.totalEntries} hint="Toutes éditions confondues" accent="bg-accent/10 text-accent" />
         <StatCard icon={CheckCircle2} label="Entrées approuvées" value={data.totals.approved} hint="Prêtes pour le jury" accent="bg-accent/20 text-accent" />

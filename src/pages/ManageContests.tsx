@@ -528,23 +528,34 @@ const ManageContests = () => {
                                       )}
                                     </div>
                                   </div>
-                                  <div className="flex gap-2">
+                                  <div className="flex flex-wrap gap-2">
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => handleEdit(contest.id)}
+                                    >
+                                      <Edit className="mr-2 h-4 w-4" />
+                                      Modifier
+                                    </Button>
                                     <Button
                                       variant="outline"
                                       size="sm"
                                       asChild
                                     >
                                       <Link to={`/manage-contests/${contest.id}/judges`}>
-                                        <Users className="h-4 w-4 mr-1" />
+                                        <Users className="mr-2 h-4 w-4" />
                                         Juges
                                       </Link>
                                     </Button>
                                     <Button
                                       variant="outline"
                                       size="sm"
-                                      onClick={() => handleEdit(contest.id)}
+                                      asChild
                                     >
-                                      <Edit className="h-4 w-4" />
+                                      <Link to={`/contests/${contest.id}/results`}>
+                                        <Trophy className="mr-2 h-4 w-4" />
+                                        Résultats
+                                      </Link>
                                     </Button>
                                     <Button
                                       variant="destructive"
@@ -552,7 +563,8 @@ const ManageContests = () => {
                                       onClick={() => handleDelete(contest.id)}
                                       disabled={deleteContestMutation.isPending}
                                     >
-                                      <Trash2 className="h-4 w-4" />
+                                      <Trash2 className="mr-2 h-4 w-4" />
+                                      Supprimer
                                     </Button>
                                   </div>
                                 </div>
