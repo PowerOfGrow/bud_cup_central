@@ -105,9 +105,10 @@
 - [ ] Tests E2E (Playwright)
 
 ### 5.2 CI/CD
-- [ ] Pipeline GitHub Actions
-- [ ] Tests automatiques avant déploiement
-- [ ] Déploiement automatique staging/prod
+- [x] Pipeline GitHub Actions
+- [x] Tests automatiques avant déploiement
+- [x] Déploiement automatique production (Vercel)
+- [ ] Déploiement automatique staging
 
 ### 5.3 Monitoring
 - [ ] Logging des erreurs (Sentry)
