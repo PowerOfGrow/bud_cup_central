@@ -48,6 +48,11 @@ const contestSchema = z.object({
   registration_close_date: z.string().optional(),
   prize_pool: z.coerce.number().min(0).optional().or(z.literal("")),
   rules_url: z.string().url("URL invalide").optional().or(z.literal("")),
+  thc_limit: z.coerce.number().min(0).max(1.0).optional().or(z.literal("")),
+  applicable_countries: z.string().optional(),
+  legal_disclaimer: z.string().optional(),
+  jury_weight: z.coerce.number().min(0).max(1.0).optional().or(z.literal("")),
+  public_weight: z.coerce.number().min(0).max(1.0).optional().or(z.literal("")),
 });
 
 type ContestFormValues = z.infer<typeof contestSchema>;
@@ -102,6 +107,11 @@ const ManageContests = () => {
       registration_close_date: "",
       prize_pool: undefined,
       rules_url: "",
+      thc_limit: 0.3,
+      applicable_countries: "",
+      legal_disclaimer: "",
+      jury_weight: 0.7,
+      public_weight: 0.3,
     },
   });
 
@@ -119,6 +129,11 @@ const ManageContests = () => {
         registration_close_date: editingContest.registration_close_date ? new Date(editingContest.registration_close_date).toISOString().slice(0, 16) : "",
         prize_pool: editingContest.prize_pool ?? undefined,
         rules_url: editingContest.rules_url || "",
+        thc_limit: editingContest.thc_limit ?? 0.3,
+        applicable_countries: editingContest.applicable_countries?.join(", ") || "",
+        legal_disclaimer: editingContest.legal_disclaimer || "",
+        jury_weight: editingContest.jury_weight ?? 0.7,
+        public_weight: editingContest.public_weight ?? 0.3,
       });
     }
   }, [editingContest, form]);
@@ -143,6 +158,13 @@ const ManageContests = () => {
         registration_close_date: data.registration_close_date ? new Date(data.registration_close_date).toISOString() : null,
         prize_pool: data.prize_pool || null,
         rules_url: data.rules_url || null,
+        thc_limit: data.thc_limit || 0.3,
+        applicable_countries: data.applicable_countries 
+          ? data.applicable_countries.split(",").map((c: string) => c.trim()).filter(Boolean)
+          : ['EU'],
+        legal_disclaimer: data.legal_disclaimer || null,
+        jury_weight: data.jury_weight || 0.7,
+        public_weight: data.public_weight || 0.3,
         created_by: user.id,
       };
 
@@ -450,6 +472,211 @@ const ManageContests = () => {
                           </FormItem>
                         )}
                       />
+                    </div>
+
+                    {/* Section Conformité Légale THC */}
+                    <div className="border-t pt-6 space-y-4">
+                      <div>
+                        <h3 className="text-lg font-semibold mb-2">Conformité Légale</h3>
+                        <p className="text-sm text-muted-foreground mb-4">
+                          Configurez les limites légales pour ce concours selon les réglementations applicables
+                        </p>
+                      </div>
+
+                      <FormField
+                        control={form.control}
+                        name="thc_limit"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Limite THC (%)</FormLabel>
+                            <FormControl>
+                              <Input
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                max="1.0"
+                                placeholder="0.3"
+                                {...field}
+                                value={field.value ?? ""}
+                                onChange={(e) => {
+                                  const value = e.target.value;
+                                  if (value === "") {
+                                    field.onChange(0.3);
+                                  } else {
+                                    const numValue = parseFloat(value);
+                                    if (!isNaN(numValue)) {
+                                      field.onChange(numValue);
+                                    }
+                                  }
+                                }}
+                              />
+                            </FormControl>
+                            <FormDescription>
+                              Limite légale de THC pour ce concours. Par défaut : 0.3% (réglementation UE standard). 
+                              Exemples : 0.3% (UE), 0.2% (Suisse/stricte), 0.1% (très stricte).
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="applicable_countries"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Pays Applicables</FormLabel>
+                            <FormControl>
+                              <Input
+                                placeholder="FR, BE, CH (codes ISO séparés par des virgules)"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormDescription>
+                              Codes pays ISO où ce concours est applicable (ex: FR, BE, CH). 
+                              Laissez vide ou mettez "EU" pour l'Europe entière. Séparez plusieurs pays par des virgules.
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="legal_disclaimer"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Disclaimer Légal</FormLabel>
+                            <FormControl>
+                              <Textarea
+                                placeholder="Avertissements légaux spécifiques à ce concours..."
+                                className="min-h-[100px]"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormDescription>
+                              Texte d'avertissement légal spécifique qui sera affiché lors de la soumission d'entrées (ex: restrictions géographiques, réglementations locales).
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    {/* Section Pondérations Score Combiné */}
+                    <div className="border-t pt-6 space-y-4">
+                      <div>
+                        <h3 className="text-lg font-semibold mb-2">Pondérations du Score Combiné</h3>
+                        <p className="text-sm text-muted-foreground mb-4">
+                          Configurez les poids pour le calcul du score final (jury + vote public). La somme doit être égale à 100%.
+                        </p>
+                      </div>
+
+                      <div className="grid gap-4 md:grid-cols-2">
+                        <FormField
+                          control={form.control}
+                          name="jury_weight"
+                          render={({ field }) => {
+                            const publicWeight = form.watch("public_weight") ?? 0.3;
+                            const totalWeight = (field.value ?? 0.7) + publicWeight;
+                            const isValid = Math.abs(totalWeight - 1.0) < 0.01;
+                            
+                            return (
+                              <FormItem>
+                                <FormLabel>Pondération Jury (%)</FormLabel>
+                                <FormControl>
+                                  <Input
+                                    type="number"
+                                    step="0.1"
+                                    min="0"
+                                    max="1"
+                                    placeholder="0.7"
+                                    {...field}
+                                    value={field.value ?? ""}
+                                    onChange={(e) => {
+                                      const value = e.target.value;
+                                      if (value === "") {
+                                        field.onChange(0.7);
+                                      } else {
+                                        const numValue = parseFloat(value);
+                                        if (!isNaN(numValue)) {
+                                          field.onChange(Math.max(0, Math.min(1, numValue)));
+                                        }
+                                      }
+                                    }}
+                                  />
+                                </FormControl>
+                                <FormDescription>
+                                  Poids des scores jury dans le calcul final (ex: 0.7 = 70%). Par défaut : 70%
+                                </FormDescription>
+                                {!isValid && totalWeight > 0 && (
+                                  <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                                    ⚠️ La somme des pondérations doit être égale à 100% (actuellement {Math.round(totalWeight * 100)}%)
+                                  </p>
+                                )}
+                                <FormMessage />
+                              </FormItem>
+                            );
+                          }}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="public_weight"
+                          render={({ field }) => {
+                            const juryWeight = form.watch("jury_weight") ?? 0.7;
+                            const totalWeight = juryWeight + (field.value ?? 0.3);
+                            const isValid = Math.abs(totalWeight - 1.0) < 0.01;
+                            
+                            return (
+                              <FormItem>
+                                <FormLabel>Pondération Public (%)</FormLabel>
+                                <FormControl>
+                                  <Input
+                                    type="number"
+                                    step="0.1"
+                                    min="0"
+                                    max="1"
+                                    placeholder="0.3"
+                                    {...field}
+                                    value={field.value ?? ""}
+                                    onChange={(e) => {
+                                      const value = e.target.value;
+                                      if (value === "") {
+                                        field.onChange(0.3);
+                                      } else {
+                                        const numValue = parseFloat(value);
+                                        if (!isNaN(numValue)) {
+                                          field.onChange(Math.max(0, Math.min(1, numValue)));
+                                        }
+                                      }
+                                    }}
+                                  />
+                                </FormControl>
+                                <FormDescription>
+                                  Poids des votes publics dans le calcul final (ex: 0.3 = 30%). Par défaut : 30%
+                                </FormDescription>
+                                {!isValid && totalWeight > 0 && (
+                                  <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                                    ⚠️ La somme des pondérations doit être égale à 100% (actuellement {Math.round(totalWeight * 100)}%)
+                                  </p>
+                                )}
+                                <FormMessage />
+                              </FormItem>
+                            );
+                          }}
+                        />
+                      </div>
+
+                      <div className="bg-muted/40 rounded-lg p-4">
+                        <p className="text-sm font-medium mb-2">Formule du Score Combiné :</p>
+                        <p className="text-xs text-muted-foreground">
+                          Score Combiné = (Moyenne Jury × {Math.round((form.watch("jury_weight") ?? 0.7) * 100)}%) + (Moyenne Public normalisée × {Math.round((form.watch("public_weight") ?? 0.3) * 100)}%)
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          * La moyenne publique (0-5 étoiles) est normalisée sur une échelle 0-100 avant d'être appliquée
+                        </p>
+                      </div>
                     </div>
 
                     <div className="flex gap-2">

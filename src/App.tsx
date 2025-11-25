@@ -25,6 +25,12 @@ const Notifications = lazy(() => import("./pages/Notifications"));
 const Favorites = lazy(() => import("./pages/Favorites"));
 const Search = lazy(() => import("./pages/Search"));
 const Settings = lazy(() => import("./pages/Settings"));
+const Terms = lazy(() => import("./pages/legal/Terms"));
+const Privacy = lazy(() => import("./pages/legal/Privacy"));
+const Disclaimer = lazy(() => import("./pages/legal/Disclaimer"));
+const Cookies = lazy(() => import("./pages/legal/Cookies"));
+const MonitorVotesPage = lazy(() => import("./pages/MonitorVotes"));
+const MonitorJudgeConflictsPage = lazy(() => import("./pages/MonitorJudgeConflicts"));
 
 // Loading component
 const PageLoader = () => (
@@ -87,6 +93,14 @@ const App = () => (
             element={<ContestResults />}
           />
           <Route
+            path="/monitor-votes"
+            element={<MonitorVotesPage />}
+          />
+          <Route
+            path="/monitor-judge-conflicts"
+            element={<MonitorJudgeConflictsPage />}
+          />
+          <Route
             path="/notifications"
             element={
               <ProtectedRoute>
@@ -111,6 +125,10 @@ const App = () => (
               </ProtectedRoute>
             }
           />
+          <Route path="/legal/terms" element={<Terms />} />
+          <Route path="/legal/privacy" element={<Privacy />} />
+          <Route path="/legal/disclaimer" element={<Disclaimer />} />
+          <Route path="/legal/cookies" element={<Cookies />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
           </Routes>

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, UserPlus, X, Mail, Check, Clock, XCircle } from "lucide-react";
+import { ArrowLeft, UserPlus, X, Mail, Check, Clock, XCircle, AlertTriangle } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -61,6 +61,23 @@ const ManageContestJudges = () => {
     },
   });
 
+  // Récupérer les juges avec conflits d'intérêt (producteurs dans ce concours)
+  const { data: judgesWithConflicts } = useQuery({
+    queryKey: ["judge-conflicts", contestId],
+    queryFn: async () => {
+      if (!contestId) return [];
+      const { data, error } = await supabase
+        .from("entries")
+        .select("producer_id")
+        .eq("contest_id", contestId)
+        .neq("status", "rejected");
+
+      if (error) throw error;
+      return new Set(data?.map((e) => e.producer_id) || []);
+    },
+    enabled: !!contestId,
+  });
+
   // Récupérer les juges assignés à ce concours
   const { data: assignedJudges, isLoading: assignedLoading } = useQuery({
     queryKey: ["contest-judges", contestId],
@@ -96,23 +113,36 @@ const ManageContestJudges = () => {
     mutationFn: async ({ judgeId, judgeRole }: { judgeId: string; judgeRole: string }) => {
       if (!contestId) throw new Error("Contest ID manquant");
 
-      const { error } = await supabase.from("contest_judges").insert({
-        contest_id: contestId,
-        judge_id: judgeId,
-        invitation_status: "pending",
-        judge_role: judgeRole,
+      // Vérifier d'abord s'il y a un conflit d'intérêt (producteur dans ce concours)
+      if (judgesWithConflicts?.has(judgeId)) {
+        throw new Error("Conflit d'intérêt : ce juge participe au concours en tant que producteur");
+      }
+
+      // Utiliser la fonction RPC qui vérifie aussi le conflit côté serveur
+      const { data, error } = await supabase.rpc("assign_contest_judge", {
+        p_contest_id: contestId,
+        p_judge_id: judgeId,
+        p_judge_role: judgeRole,
+        p_invitation_status: "pending",
       });
 
       if (error) throw error;
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["contest-judges", contestId] });
+      queryClient.invalidateQueries({ queryKey: ["judge-conflicts", contestId] });
       toast.success("Juge assigné avec succès !");
     },
     onError: (error: any) => {
-      if (error.code === "23505") {
-        // Unique constraint violation
+      // Gérer les erreurs spécifiques
+      if (error.code === "23505" || error.message?.includes("already assigned")) {
         toast.error("Ce juge est déjà assigné à ce concours");
+      } else if (error.message?.includes("Conflict of interest") || error.message?.includes("Conflit d'intérêt")) {
+        toast.error(
+          "Conflit d'intérêt détecté : ce juge participe au concours en tant que producteur et ne peut pas être assigné comme juge.",
+          { duration: 6000 }
+        );
       } else {
         toast.error(error.message || "Erreur lors de l'assignation du juge");
       }
@@ -176,11 +206,22 @@ const ManageContestJudges = () => {
     }
   };
 
-  // Filtrer les juges disponibles (non assignés)
+  // Filtrer les juges disponibles (non assignés et sans conflit d'intérêt)
   const assignedJudgeIds = new Set(assignedJudges?.map((aj) => aj.judge_id) || []);
   const availableJudges = allJudges?.filter(
     (judge) =>
       !assignedJudgeIds.has(judge.id) &&
+      !judgesWithConflicts?.has(judge.id) && // Exclure les juges avec conflit
+      (searchQuery.trim() === "" ||
+        judge.display_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        judge.organization?.toLowerCase().includes(searchQuery.toLowerCase()))
+  );
+
+  // Juges avec conflits d'intérêt (pour affichage informatif)
+  const conflictedJudges = allJudges?.filter(
+    (judge) =>
+      !assignedJudgeIds.has(judge.id) &&
+      judgesWithConflicts?.has(judge.id) &&
       (searchQuery.trim() === "" ||
         judge.display_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         judge.organization?.toLowerCase().includes(searchQuery.toLowerCase()))
@@ -396,6 +437,48 @@ const ManageContestJudges = () => {
                       {searchQuery.trim()
                         ? "Aucun juge ne correspond à votre recherche"
                         : "Tous les juges disponibles sont déjà assignés"}
+                    </div>
+                  )}
+
+                  {/* Afficher les juges avec conflit d'intérêt */}
+                  {conflictedJudges && conflictedJudges.length > 0 && (
+                    <div className="mt-4 pt-4 border-t border-border">
+                      <div className="flex items-center gap-2 mb-3">
+                        <AlertTriangle className="h-4 w-4 text-amber-600" />
+                        <p className="text-sm font-semibold text-foreground">
+                          Juges non disponibles (conflit d'intérêt)
+                        </p>
+                      </div>
+                      <p className="text-xs text-muted-foreground mb-3">
+                        Ces juges participent au concours en tant que producteurs et ne peuvent pas être assignés comme juges.
+                      </p>
+                      <div className="space-y-2 max-h-[200px] overflow-y-auto">
+                        {conflictedJudges.map((judge) => (
+                          <Card key={judge.id} className="border-amber-500/30 bg-amber-50/50 dark:bg-amber-950/20">
+                            <CardContent className="p-3">
+                              <div className="flex items-center justify-between gap-4">
+                                <div className="flex-1">
+                                  <h4 className="font-semibold text-foreground">
+                                    {judge.display_name}
+                                  </h4>
+                                  {judge.organization && (
+                                    <p className="text-sm text-muted-foreground">
+                                      {judge.organization}
+                                    </p>
+                                  )}
+                                  <Badge variant="outline" className="mt-1 border-amber-500/50">
+                                    {judge.role}
+                                  </Badge>
+                                </div>
+                                <Badge className="bg-amber-500/10 text-amber-700 dark:text-amber-400">
+                                  <AlertTriangle className="mr-1 h-3 w-3" />
+                                  Producteur
+                                </Badge>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
                     </div>
                   )}
                 </div>

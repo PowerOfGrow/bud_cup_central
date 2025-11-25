@@ -67,28 +67,36 @@ const Vote = () => {
     mutationFn: async (voteData: { score: number; comment: string }) => {
       if (!entryId || !user?.id) throw new Error("Données manquantes");
 
-      if (existingVote) {
-        // Mettre à jour le vote existant
-        const { error } = await supabase
-          .from("public_votes")
-          .update({
-            score: voteData.score,
-            comment: voteData.comment,
-          })
-          .eq("id", existingVote.id);
+      // Récupérer l'IP et user agent pour anti-fraude
+      // Note: L'IP réelle sera capturée côté serveur, on envoie juste le user agent
+      const userAgent = navigator.userAgent;
 
-        if (error) throw error;
-      } else {
-        // Créer un nouveau vote
-        const { error } = await supabase.from("public_votes").insert({
-          entry_id: entryId,
-          voter_profile_id: user.id,
-          score: voteData.score,
-          comment: voteData.comment,
-        });
+      // Utiliser la fonction PostgreSQL qui inclut le rate limiting et les vérifications anti-fraude
+      const { data, error } = await supabase.rpc("create_public_vote", {
+        p_entry_id: entryId,
+        p_voter_profile_id: user.id,
+        p_score: voteData.score as number,
+        p_comment: voteData.comment || null,
+        p_ip_address: null, // L'IP sera capturée automatiquement côté serveur via Supabase
+        p_user_agent: userAgent,
+      });
 
-        if (error) throw error;
+      if (error) {
+        // Gérer les erreurs de rate limiting de manière conviviale
+        if (error.message.includes("Rate limit exceeded")) {
+          throw new Error(
+            "Vous avez atteint la limite de votes. Veuillez patienter avant de voter à nouveau."
+          );
+        }
+        if (error.message.includes("Suspicious activity")) {
+          throw new Error(
+            "Activité suspecte détectée. Si vous pensez qu'il s'agit d'une erreur, contactez le support."
+          );
+        }
+        throw error;
       }
+
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["vote", entryId, user?.id] });

@@ -1,12 +1,15 @@
 import Header from "@/components/Header";
+import Footer from "@/components/Footer";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Award, Shield, Users, TrendingUp } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Award, Shield, Users, TrendingUp, AlertTriangle } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const About = () => {
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen flex flex-col">
       <Header />
-      <div className="pt-28 pb-16">
+      <div className="pt-28 pb-16 flex-1">
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto">
             <div className="text-center mb-12">
@@ -90,9 +93,26 @@ const About = () => {
                 </CardContent>
               </Card>
             </div>
+
+            {/* Disclaimer */}
+            <Alert className="border-amber-500 bg-amber-50 dark:bg-amber-950">
+              <AlertTriangle className="h-4 w-4 text-amber-600" />
+              <AlertTitle className="font-bold text-amber-900 dark:text-amber-100">
+                Avertissement Légal
+              </AlertTitle>
+              <AlertDescription className="text-amber-800 dark:text-amber-200">
+                Cette plateforme est destinée exclusivement aux produits CBD conformes à la réglementation européenne (THC ≤ 0,3%). 
+                L'accès est réservé aux personnes majeures. Aucune allégation de santé ou thérapeutique n'est faite concernant les produits présentés. 
+                Pour plus d'informations, consultez nos{" "}
+                <Link to="/legal/disclaimer" className="text-accent hover:underline font-semibold">
+                  Avertissements Légaux
+                </Link>.
+              </AlertDescription>
+            </Alert>
           </div>
         </div>
       </div>
+      <Footer />
     </div>
   );
 };

@@ -43,7 +43,12 @@ const entrySchema = z.object({
   category: z.enum(["indica", "sativa", "hybrid", "outdoor", "hash", "other"], {
     required_error: "Sélectionnez une catégorie",
   }),
-  thc_percent: z.coerce.number().min(0).max(100).optional().or(z.literal("")),
+  thc_percent: z.coerce
+    .number()
+    .min(0, "Le taux THC doit être positif")
+    .max(0.3, "Le taux THC doit être ≤0,3% selon la réglementation européenne")
+    .optional()
+    .or(z.literal("")),
   cbd_percent: z.coerce.number().min(0).max(100).optional().or(z.literal("")),
   terpene_profile: z.string().optional(),
   batch_code: z.string().optional(),
@@ -74,6 +79,37 @@ const SubmitEntry = () => {
       return data;
     },
   });
+
+  // État pour suivre le concours sélectionné
+  const [selectedContestId, setSelectedContestId] = useState<string | null>(contestId || null);
+
+  // Récupérer la limite THC du concours sélectionné
+  const { data: selectedContest } = useQuery({
+    queryKey: ["contest", selectedContestId, "thc-limit"],
+    queryFn: async () => {
+      if (!selectedContestId) return null;
+      const { data, error } = await supabase
+        .from("contests")
+        .select("id, name, thc_limit, applicable_countries, legal_disclaimer")
+        .eq("id", selectedContestId)
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!selectedContestId,
+  });
+
+  // Limite THC du concours (par défaut 0.3%)
+  const thcLimit = selectedContest?.thc_limit ?? 0.3;
+
+  // Mettre à jour selectedContestId quand le form change
+  const watchedContestId = form.watch("contest_id");
+  useEffect(() => {
+    if (watchedContestId) {
+      setSelectedContestId(watchedContestId);
+    }
+  }, [watchedContestId]);
 
   // Charger l'entrée à éditer si editEntryId est présent
   const { data: existingEntry, isLoading: loadingEntry } = useQuery({
@@ -399,12 +435,35 @@ const SubmitEntry = () => {
                               type="number"
                               step="0.01"
                               min="0"
-                              max="100"
-                              placeholder="0.25"
+                              max={thcLimit}
+                              placeholder={`≤${thcLimit}`}
                               {...field}
                               value={field.value ?? ""}
+                              onChange={(e) => {
+                                const value = e.target.value;
+                                if (value === "") {
+                                  field.onChange(undefined);
+                                  return;
+                                }
+                                const numValue = parseFloat(value);
+                                if (!isNaN(numValue) && numValue <= thcLimit) {
+                                  field.onChange(numValue);
+                                } else if (numValue > thcLimit) {
+                                  toast.error(`Le taux THC ne peut pas dépasser ${thcLimit}% pour ce concours`);
+                                }
+                              }}
                             />
                           </FormControl>
+                          <FormDescription className="text-xs">
+                            {selectedContest 
+                              ? `Limite légale pour ce concours : ≤${thcLimit}%${selectedContest.applicable_countries && selectedContest.applicable_countries.length > 0 ? ` (${selectedContest.applicable_countries.join(", ")})` : ""}`
+                              : `Limite légale UE : ≤0,3% (réglementation européenne)`}
+                          </FormDescription>
+                          {selectedContest?.legal_disclaimer && (
+                            <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                              {selectedContest.legal_disclaimer}
+                            </p>
+                          )}
                           <FormMessage />
                         </FormItem>
                       )}

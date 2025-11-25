@@ -96,6 +96,20 @@ const JudgeEvaluation = () => {
     },
   });
 
+  // Calculer la moyenne des 4 critères pour proposer un score global automatique
+  const watchScores = form.watch(["appearance_score", "aroma_score", "taste_score", "effect_score"]);
+  const calculatedOverall = Math.round(
+    (watchScores[0] + watchScores[1] + watchScores[2] + watchScores[3]) / 4
+  );
+
+  // Mettre à jour le score global calculé quand les critères changent
+  useEffect(() => {
+    if (!existingScore && calculatedOverall > 0) {
+      // Seulement si c'est une nouvelle évaluation, proposer la moyenne calculée
+      form.setValue("overall_score", calculatedOverall, { shouldValidate: false });
+    }
+  }, [calculatedOverall, existingScore, form]);
+
   // Recharger les valeurs si existingScore change
   useEffect(() => {
     if (existingScore) {
@@ -152,7 +166,15 @@ const JudgeEvaluation = () => {
       navigate(-1);
     },
     onError: (error: any) => {
-      toast.error(error.message || "Erreur lors de l'enregistrement de l'évaluation");
+      // Gérer les erreurs de conflit d'intérêt de manière explicite
+      if (error.message?.includes("Conflict of interest") || error.message?.includes("conflit")) {
+        toast.error(
+          "Conflit d'intérêt : vous ne pouvez pas évaluer vos propres entrées.",
+          { duration: 6000 }
+        );
+      } else {
+        toast.error(error.message || "Erreur lors de l'enregistrement de l'évaluation");
+      }
     },
   });
 
@@ -193,6 +215,24 @@ const JudgeEvaluation = () => {
         <div className="pt-28 pb-16">
           <div className="container mx-auto px-4">
             <ErrorState message="Impossible de charger l'entrée" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Vérifier le conflit d'intérêt : le juge ne peut pas évaluer ses propres entrées
+  const isProducer = entry.producer_id === user?.id;
+  if (isProducer) {
+    return (
+      <div className="min-h-screen">
+        <Header />
+        <div className="pt-28 pb-16">
+          <div className="container mx-auto px-4">
+            <ErrorState 
+              message="Conflit d'intérêt détecté"
+              description="Vous ne pouvez pas évaluer vos propres entrées. Cette entrée vous appartient."
+            />
           </div>
         </div>
       </div>
@@ -324,11 +364,18 @@ const JudgeEvaluation = () => {
                     description="Intensité, qualité, durée des effets"
                   />
 
-                  <ScoreField
-                    name="overall_score"
-                    label="Note globale"
-                    description="Appréciation générale de la variété"
-                  />
+                  <div className="space-y-2">
+                    <ScoreField
+                      name="overall_score"
+                      label="Note globale"
+                      description={`Appréciation générale (moyenne calculée : ${calculatedOverall}/100 - ajustable)`}
+                    />
+                    {!existingScore && (
+                      <p className="text-xs text-muted-foreground">
+                        💡 La note globale est calculée automatiquement comme moyenne des 4 critères. Vous pouvez l'ajuster selon votre appréciation globale.
+                      </p>
+                    )}
+                  </div>
 
                   <FormField
                     control={form.control}

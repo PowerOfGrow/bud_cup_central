@@ -845,7 +845,7 @@ const OrganizerPanel = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
             <Button variant="outline" className="h-auto flex-col items-start justify-start p-4" asChild>
               <Link to="/manage-contests">
                 <Calendar className="h-5 w-5 mb-2" />
@@ -865,6 +865,20 @@ const OrganizerPanel = () => {
                 <ListChecks className="h-5 w-5 mb-2" />
                 <span className="font-semibold">Voir les concours</span>
                 <span className="text-xs text-muted-foreground mt-1">Liste publique</span>
+              </Link>
+            </Button>
+            <Button variant="outline" className="h-auto flex-col items-start justify-start p-4" asChild>
+              <Link to="/monitor-votes">
+                <Shield className="h-5 w-5 mb-2" />
+                <span className="font-semibold">Monitoring Anti-Fraude</span>
+                <span className="text-xs text-muted-foreground mt-1">Votes suspects</span>
+              </Link>
+            </Button>
+            <Button variant="outline" className="h-auto flex-col items-start justify-start p-4" asChild>
+              <Link to="/monitor-judge-conflicts">
+                <Scale className="h-5 w-5 mb-2" />
+                <span className="font-semibold">Conflits Juges</span>
+                <span className="text-xs text-muted-foreground mt-1">Surveillance</span>
               </Link>
             </Button>
             <Button variant="outline" className="h-auto flex-col items-start justify-start p-4" asChild>

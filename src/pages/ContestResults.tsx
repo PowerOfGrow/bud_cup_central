@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { Award, Trophy, Medal, Star, ArrowLeft, TrendingUp } from "lucide-react";
+import { Award, Trophy, Medal, Star, ArrowLeft, TrendingUp, Sparkles } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -9,10 +9,15 @@ import Header from "@/components/Header";
 import { LoadingState } from "@/components/LoadingState";
 import { ErrorState } from "@/components/ErrorState";
 import { Link } from "react-router-dom";
+import { useAuth } from "@/hooks/use-auth";
+import { EntryBadges } from "@/components/EntryBadges";
+import { ManageEntryBadges } from "@/components/ManageEntryBadges";
 
 const ContestResults = () => {
   const { contestId } = useParams<{ contestId: string }>();
   const navigate = useNavigate();
+  const { profile } = useAuth();
+  const isOrganizer = profile?.role === "organizer";
 
   // Récupérer les informations du concours
   const { data: contest, isLoading: contestLoading } = useQuery({
@@ -33,9 +38,11 @@ const ContestResults = () => {
 
   // Récupérer les entrées avec leurs scores
   const { data: entries, isLoading: entriesLoading } = useQuery({
-    queryKey: ["contest-results", contestId],
+    queryKey: ["contest-results", contestId, contest?.id],
     queryFn: async () => {
       if (!contestId) return [];
+      
+      // Récupérer les entrées
       const { data, error } = await supabase
         .from("entries")
         .select(
@@ -57,6 +64,12 @@ const ContestResults = () => {
           public_votes (
             id,
             score
+          ),
+          entry_badges (
+            id,
+            badge,
+            label,
+            description
           )
         `
         )
@@ -65,6 +78,16 @@ const ContestResults = () => {
         .order("created_at", { ascending: false });
 
       if (error) throw error;
+
+      // Récupérer les poids du concours depuis la DB
+      const { data: contestData } = await supabase
+        .from("contests")
+        .select("jury_weight, public_weight")
+        .eq("id", contestId)
+        .single();
+
+      const juryWeight = contestData?.jury_weight ?? 0.7;
+      const publicWeight = contestData?.public_weight ?? 0.3;
 
       // Calculer les scores moyens et classer les entrées
       return (
@@ -84,8 +107,9 @@ const ContestResults = () => {
                 ? publicVotes.reduce((sum, vote) => sum + vote.score, 0) / publicVotes.length
                 : 0;
 
-            // Score combiné : 70% jury + 30% public (normalisé)
-            const combinedScore = judgeAverage * 0.7 + (publicAverage / 5) * 100 * 0.3;
+            // Score combiné : pondération configurable par concours (par défaut 70% jury + 30% public)
+            const normalizedPublicScore = (publicAverage / 5) * 100; // Normaliser 0-5 vers 0-100
+            const combinedScore = judgeAverage * juryWeight + normalizedPublicScore * publicWeight;
 
             return {
               ...entry,
@@ -94,6 +118,7 @@ const ContestResults = () => {
               combinedScore: Math.round(combinedScore * 10) / 10,
               judgeScoresCount: judgeScores.length,
               publicVotesCount: publicVotes.length,
+              badges: entry.entry_badges || [],
             };
           })
           .sort((a, b) => b.combinedScore - a.combinedScore) || []
@@ -184,6 +209,11 @@ const ContestResults = () => {
             <p className="text-muted-foreground text-lg">
               Classement final des entrées
             </p>
+            {contest && (
+              <p className="text-sm text-muted-foreground mt-2">
+                Pondération : {Math.round((contest.jury_weight ?? 0.7) * 100)}% Jury • {Math.round((contest.public_weight ?? 0.3) * 100)}% Public
+              </p>
+            )}
           </div>
 
           {entries && entries.length > 0 ? (
@@ -276,14 +306,30 @@ const ContestResults = () => {
                         </div>
                         <div className="flex-1">
                           <div className="flex items-start justify-between gap-4 mb-3">
-                            <div>
-                              <h3 className="text-xl font-bold text-foreground mb-1">
-                                {entry.strain_name}
-                              </h3>
-                              <p className="text-muted-foreground">
-                                {entry.producer?.display_name}
-                                {entry.producer?.organization && ` • ${entry.producer.organization}`}
-                              </p>
+                            <div className="flex-1">
+                              <div className="flex items-start justify-between gap-2 mb-2">
+                                <div className="flex-1">
+                                  <h3 className="text-xl font-bold text-foreground mb-1">
+                                    {entry.strain_name}
+                                  </h3>
+                                  <p className="text-muted-foreground">
+                                    {entry.producer?.display_name}
+                                    {entry.producer?.organization && ` • ${entry.producer.organization}`}
+                                  </p>
+                                </div>
+                                {isOrganizer && (
+                                  <ManageEntryBadges
+                                    entryId={entry.id}
+                                    entryName={entry.strain_name}
+                                    existingBadges={entry.badges}
+                                  />
+                                )}
+                              </div>
+                              {entry.badges && entry.badges.length > 0 && (
+                                <div className="mt-2">
+                                  <EntryBadges badges={entry.badges} />
+                                </div>
+                              )}
                             </div>
                             <div className="text-right">
                               <div className="text-2xl font-bold text-accent mb-1">
