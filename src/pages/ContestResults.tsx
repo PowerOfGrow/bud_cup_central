@@ -1,9 +1,10 @@
+import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Award, Trophy, Medal, Star, ArrowLeft, TrendingUp, Sparkles } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import Header from "@/components/Header";
 import { LoadingState } from "@/components/LoadingState";
@@ -12,12 +13,27 @@ import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/use-auth";
 import { EntryBadges } from "@/components/EntryBadges";
 import { ManageEntryBadges } from "@/components/ManageEntryBadges";
+import { toast } from "sonner";
+import { Sparkles, CheckCircle2 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const ContestResults = () => {
   const { contestId } = useParams<{ contestId: string }>();
   const navigate = useNavigate();
   const { profile } = useAuth();
   const isOrganizer = profile?.role === "organizer";
+  const queryClient = useQueryClient();
+  const [showAutoBadgeDialog, setShowAutoBadgeDialog] = useState(false);
+  const [includePeopleChoice, setIncludePeopleChoice] = useState(true);
 
   // Récupérer les informations du concours
   const { data: contest, isLoading: contestLoading } = useQuery({
@@ -214,6 +230,18 @@ const ContestResults = () => {
                 Pondération : {Math.round((contest.jury_weight ?? 0.7) * 100)}% Jury • {Math.round((contest.public_weight ?? 0.3) * 100)}% Public
               </p>
             )}
+            {isOrganizer && contest?.status === "completed" && (
+              <div className="mt-4">
+                <Button
+                  onClick={() => setShowAutoBadgeDialog(true)}
+                  variant="outline"
+                  className="gap-2"
+                >
+                  <Sparkles className="h-4 w-4" />
+                  Attribuer les badges automatiquement
+                </Button>
+              </div>
+            )}
           </div>
 
           {entries && entries.length > 0 ? (
@@ -386,6 +414,64 @@ const ContestResults = () => {
           )}
         </div>
       </div>
+
+      {/* Dialog pour attribution automatique des badges */}
+      <AlertDialog open={showAutoBadgeDialog} onOpenChange={setShowAutoBadgeDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Attribuer les badges automatiquement</AlertDialogTitle>
+            <AlertDialogDescription>
+              Cette action va attribuer automatiquement les badges suivants selon les résultats :
+              <ul className="list-disc list-inside mt-2 space-y-1">
+                <li><strong>Or</strong> : 1ère place</li>
+                <li><strong>Argent</strong> : 2ème place</li>
+                <li><strong>Bronze</strong> : 3ème place</li>
+                <li><strong>Choix du public</strong> : Meilleur score public (si coché)</li>
+              </ul>
+              <p className="mt-3 text-sm text-muted-foreground">
+                Les badges existants ne seront pas dupliqués. Seuls les badges manquants seront attribués.
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="py-4">
+            <label className="flex items-center space-x-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={includePeopleChoice}
+                onChange={(e) => setIncludePeopleChoice(e.target.checked)}
+                className="rounded border-gray-300"
+              />
+              <span className="text-sm">Inclure le badge "Choix du public"</span>
+            </label>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                if (!contestId) return;
+                try {
+                  const { data, error } = await supabase.rpc("award_automatic_badges", {
+                    p_contest_id: contestId,
+                    p_auto_people_choice: includePeopleChoice,
+                  });
+                  
+                  if (error) throw error;
+                  
+                  toast.success(`${data?.badges_awarded || 0} badge(s) attribué(s) avec succès !`);
+                  queryClient.invalidateQueries({ queryKey: ["contest-results", contestId] });
+                  queryClient.invalidateQueries({ queryKey: ["entry-badges"] });
+                  setShowAutoBadgeDialog(false);
+                } catch (error: any) {
+                  toast.error(error.message || "Erreur lors de l'attribution des badges");
+                }
+              }}
+            >
+              <Sparkles className="mr-2 h-4 w-4" />
+              Attribuer les badges
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

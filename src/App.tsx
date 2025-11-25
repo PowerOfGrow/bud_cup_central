@@ -31,6 +31,10 @@ const Disclaimer = lazy(() => import("./pages/legal/Disclaimer"));
 const Cookies = lazy(() => import("./pages/legal/Cookies"));
 const MonitorVotesPage = lazy(() => import("./pages/MonitorVotes"));
 const MonitorJudgeConflictsPage = lazy(() => import("./pages/MonitorJudgeConflicts"));
+const ReviewEntriesPage = lazy(() => import("./pages/ReviewEntries"));
+const EntryAuditHistoryPage = lazy(() => import("./pages/EntryAuditHistory"));
+const JudgeBiasAnalysisPage = lazy(() => import("./pages/JudgeBiasAnalysis"));
+const ModerateCommentsPage = lazy(() => import("./pages/ModerateComments"));
 
 // Loading component
 const PageLoader = () => (
@@ -99,6 +103,22 @@ const App = () => (
           <Route
             path="/monitor-judge-conflicts"
             element={<MonitorJudgeConflictsPage />}
+          />
+          <Route
+            path="/review-entries"
+            element={<ReviewEntriesPage />}
+          />
+          <Route
+            path="/entries/:entryId/audit-history"
+            element={<EntryAuditHistoryPage />}
+          />
+          <Route
+            path="/judge-bias-analysis"
+            element={<JudgeBiasAnalysisPage />}
+          />
+          <Route
+            path="/moderate-comments"
+            element={<ModerateCommentsPage />}
           />
           <Route
             path="/notifications"

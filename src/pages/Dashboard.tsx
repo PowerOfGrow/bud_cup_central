@@ -18,6 +18,12 @@ import { toast } from "sonner";
 import { useConfirm } from "@/hooks/use-confirm";
 import { useOrganizerAnalytics } from "@/hooks/use-organizer-analytics";
 import { OrganizerCharts } from "@/components/OrganizerCharts";
+import { DeadlineTracker } from "@/components/DeadlineTracker";
+import { differenceInDays, differenceInHours } from "date-fns";
+import { AlertCircle } from "lucide-react";
+import { OnboardingWizard } from "@/components/OnboardingWizard";
+import { useOnboarding } from "@/hooks/use-onboarding";
+import { useState, useEffect } from "react";
 // Lazy load des bibliothèques lourdes uniquement pour OrganizerPanel
 
 
@@ -198,7 +204,7 @@ const ViewerPanel = () => {
   );
 };
 
-const ProducerEntriesList = ({ entries }: { entries: any[] }) => {
+const ProducerEntriesList = ({ entries, contests }: { entries: any[]; contests?: any[] }) => {
   const {
     paginatedData: paginatedEntries,
     currentPage,
@@ -275,13 +281,36 @@ const ProducerEntriesList = ({ entries }: { entries: any[] }) => {
       <SubmitDialog />
       <div className="grid gap-4">
         {paginatedEntries.length ? (
-          paginatedEntries.map((entry) => (
+          paginatedEntries.map((entry) => {
+            // Calculer le temps restant jusqu'à la deadline si applicable
+            const contest = contests?.find((c: any) => c.id === entry.contest_id);
+            const deadlineDate = contest?.registration_close_date ? new Date(contest.registration_close_date) : null;
+            const now = new Date();
+            const isDraft = entry.status === "draft";
+            const isRegistrationActive = contest?.status === "registration";
+            const hoursLeft = deadlineDate && isRegistrationActive ? differenceInHours(deadlineDate, now) : null;
+            const daysLeft = deadlineDate && isRegistrationActive ? differenceInDays(deadlineDate, now) : null;
+            const showDeadlineWarning = isDraft && deadlineDate && hoursLeft !== null && hoursLeft > 0 && hoursLeft <= 7 * 24;
+
+            return (
             <Card key={entry.id} className="border-border/60 hover:border-accent/40 transition-colors">
               <CardHeader className="space-y-1">
                 <div className="flex items-center justify-between gap-3 flex-wrap">
-                  <div>
-                    <CardTitle className="text-xl text-foreground">{entry.strain_name}</CardTitle>
-                    <CardDescription>{entry.contest?.name ?? "Concours à confirmer"}</CardDescription>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <CardTitle className="text-xl text-foreground">{entry.strain_name}</CardTitle>
+                      {showDeadlineWarning && (
+                        <Badge variant={hoursLeft! < 24 ? "destructive" : "default"} className="gap-1">
+                          <AlertCircle className="h-3 w-3" />
+                          {hoursLeft! < 24 
+                            ? `${Math.round(hoursLeft!)}h`
+                            : daysLeft! <= 3 
+                            ? `${daysLeft!}j`
+                            : "Deadline"}
+                        </Badge>
+                      )}
+                    </div>
+                    <CardDescription>{entry.contest?.name ?? contest?.name ?? "Concours à confirmer"}</CardDescription>
                   </div>
                   <Badge variant="secondary" className="capitalize">{entry.status}</Badge>
                 </div>
@@ -347,8 +376,23 @@ const ProducerEntriesList = ({ entries }: { entries: any[] }) => {
                   </div>
                 </CardContent>
               )}
+              {showDeadlineWarning && (
+                <CardContent className="pt-0 border-t bg-amber-50 dark:bg-amber-950/20">
+                  <div className="flex items-center gap-2 text-sm">
+                    <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                    <span className="text-amber-900 dark:text-amber-100">
+                      {hoursLeft! < 24
+                        ? `⚠️ Deadline dans ${Math.round(hoursLeft!)} heure(s) ! Soumettez rapidement votre entrée.`
+                        : daysLeft! <= 3
+                        ? `⚠️ Deadline dans ${daysLeft} jour(s). N'oubliez pas de soumettre votre entrée.`
+                        : `📅 Deadline approchant. Pensez à finaliser votre soumission.`}
+                    </span>
+                  </div>
+                </CardContent>
+              )}
             </Card>
-          ))
+          );
+          })
         ) : (
           <Card className="border-dashed">
             <CardContent className="py-10 text-center text-muted-foreground">
@@ -430,31 +474,13 @@ const ProducerPanel = () => {
         <StatCard icon={Star} label="Note moyenne jury" value={data.overallAverage ? `${data.overallAverage}/100` : "—"} hint="Basée sur vos fiches récentes" />
       </div>
 
-      <Card className="border-border/70 bg-muted/40">
-        <CardContent className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between py-6">
-          <div>
-            <p className="text-sm text-muted-foreground uppercase tracking-wide">Prochaine échéance</p>
-            <p className="text-2xl font-semibold text-foreground">
-              {data.nextDeadline
-                ? new Date(data.nextDeadline).toLocaleDateString("fr-FR", { weekday: "long", month: "long", day: "numeric" })
-                : "Aucune date imminente"}
-            </p>
-          </div>
-          <div className="flex gap-3">
-            <Button variant="outline" asChild>
-              <Link to="/submit-entry">Soumettre une nouvelle fleur</Link>
-            </Button>
-            {profile?.role === "organizer" && (
-              <Button variant="default" asChild>
-                <Link to="/manage-contests">Gérer les concours</Link>
-              </Button>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+      {/* Deadline Tracker */}
+      {data.deadlines && data.deadlines.length > 0 && (
+        <DeadlineTracker deadlines={data.deadlines} />
+      )}
 
       <SectionWrapper title="Entrées actives" description="Suivi temps réel de vos candidatures.">
-        <ProducerEntriesList entries={data.entries} />
+        <ProducerEntriesList entries={data.entries} contests={data.deadlines || []} />
       </SectionWrapper>
     </div>
   );
@@ -845,7 +871,7 @@ const OrganizerPanel = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+          <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
             <Button variant="outline" className="h-auto flex-col items-start justify-start p-4" asChild>
               <Link to="/manage-contests">
                 <Calendar className="h-5 w-5 mb-2" />
@@ -868,6 +894,13 @@ const OrganizerPanel = () => {
               </Link>
             </Button>
             <Button variant="outline" className="h-auto flex-col items-start justify-start p-4" asChild>
+              <Link to="/review-entries">
+                <FileText className="h-5 w-5 mb-2" />
+                <span className="font-semibold">Validation COA</span>
+                <span className="text-xs text-muted-foreground mt-1">Révision des entrées</span>
+              </Link>
+            </Button>
+            <Button variant="outline" className="h-auto flex-col items-start justify-start p-4" asChild>
               <Link to="/monitor-votes">
                 <Shield className="h-5 w-5 mb-2" />
                 <span className="font-semibold">Monitoring Anti-Fraude</span>
@@ -879,6 +912,20 @@ const OrganizerPanel = () => {
                 <Scale className="h-5 w-5 mb-2" />
                 <span className="font-semibold">Conflits Juges</span>
                 <span className="text-xs text-muted-foreground mt-1">Surveillance</span>
+              </Link>
+            </Button>
+            <Button variant="outline" className="h-auto flex-col items-start justify-start p-4" asChild>
+              <Link to="/judge-bias-analysis">
+                <BarChart3 className="h-5 w-5 mb-2" />
+                <span className="font-semibold">Biais Juges</span>
+                <span className="text-xs text-muted-foreground mt-1">Analyse statistique</span>
+              </Link>
+            </Button>
+            <Button variant="outline" className="h-auto flex-col items-start justify-start p-4" asChild>
+              <Link to="/moderate-comments">
+                <Shield className="h-5 w-5 mb-2" />
+                <span className="font-semibold">Modération</span>
+                <span className="text-xs text-muted-foreground mt-1">Commentaires</span>
               </Link>
             </Button>
             <Button variant="outline" className="h-auto flex-col items-start justify-start p-4" asChild>
@@ -1041,6 +1088,15 @@ const CalendarIcon = Clock3;
 
 const Dashboard = () => {
   const { profile } = useAuth();
+  const { shouldShowOnboarding, onboardingStatus, isLoading: isLoadingOnboarding } = useOnboarding();
+  const [showOnboarding, setShowOnboarding] = useState(false);
+
+  // Afficher l'onboarding automatiquement si nécessaire
+  useEffect(() => {
+    if (!isLoadingOnboarding && shouldShowOnboarding && profile) {
+      setShowOnboarding(true);
+    }
+  }, [shouldShowOnboarding, isLoadingOnboarding, profile]);
 
   // Déterminer l'onglet par défaut selon le rôle de l'utilisateur
   const defaultTab = useMemo(() => {
@@ -1077,6 +1133,15 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-background pt-28 pb-16">
+      {/* Onboarding Wizard */}
+      {profile && (
+        <OnboardingWizard
+          open={showOnboarding}
+          onClose={() => setShowOnboarding(false)}
+          userRole={profile.role}
+        />
+      )}
+      
       <div className="container mx-auto px-4">
         <div className="max-w-3xl mx-auto text-center mb-12">
           <Badge className="mb-4 bg-gradient-gold text-foreground/80">Espace membre</Badge>

@@ -12,6 +12,9 @@ export interface Notification {
   read: boolean;
   created_at: string;
   metadata: Record<string, any> | null;
+  priority?: number | null;
+  action_url?: string | null;
+  action_label?: string | null;
 }
 
 export const useNotifications = () => {

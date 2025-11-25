@@ -3,7 +3,7 @@ import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { ArrowLeft, Upload, X } from "lucide-react";
+import { ArrowLeft, Upload, X, CheckCircle2, AlertCircle, Info, FileText, HelpCircle } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,6 +31,7 @@ import { toast } from "sonner";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Header from "@/components/Header";
 import { LoadingState } from "@/components/LoadingState";
+import { COAViewer } from "@/components/COAViewer";
 import { ErrorState } from "@/components/ErrorState";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { useFileUpload } from "@/hooks/use-file-upload";
@@ -454,10 +455,34 @@ const SubmitEntry = () => {
                               }}
                             />
                           </FormControl>
-                          <FormDescription className="text-xs">
-                            {selectedContest 
-                              ? `Limite légale pour ce concours : ≤${thcLimit}%${selectedContest.applicable_countries && selectedContest.applicable_countries.length > 0 ? ` (${selectedContest.applicable_countries.join(", ")})` : ""}`
-                              : `Limite légale UE : ≤0,3% (réglementation européenne)`}
+                          <FormDescription className="text-xs space-y-1">
+                            <div className="flex items-start gap-1">
+                              <Info className="h-3 w-3 mt-0.5 text-muted-foreground flex-shrink-0" />
+                              <span>
+                                {selectedContest 
+                                  ? `Limite légale pour ce concours : ≤${thcLimit}%${selectedContest.applicable_countries && selectedContest.applicable_countries.length > 0 ? ` (${selectedContest.applicable_countries.join(", ")})` : ""}`
+                                  : `Limite légale UE : ≤0,3% (réglementation européenne)`}
+                              </span>
+                            </div>
+                            <div className="flex items-start gap-1 text-muted-foreground">
+                              <FileText className="h-3 w-3 mt-0.5 flex-shrink-0" />
+                              <span>Dans votre COA, cherchez la section "Cannabinoids" ou "THC Total". Le taux doit être exprimé en pourcentage.</span>
+                            </div>
+                            {form.watch("thc_percent") && form.watch("thc_percent")! > 0 && (
+                              <div className={`flex items-center gap-1 ${form.watch("thc_percent")! <= thcLimit ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
+                                {form.watch("thc_percent")! <= thcLimit ? (
+                                  <>
+                                    <CheckCircle2 className="h-3 w-3" />
+                                    <span>THC conforme ✅</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <AlertCircle className="h-3 w-3" />
+                                    <span>THC non conforme - Dépassement de la limite légale</span>
+                                  </>
+                                )}
+                              </div>
+                            )}
                           </FormDescription>
                           {selectedContest?.legal_disclaimer && (
                             <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
@@ -486,6 +511,12 @@ const SubmitEntry = () => {
                               value={field.value ?? ""}
                             />
                           </FormControl>
+                          <FormDescription className="text-xs">
+                            <div className="flex items-start gap-1 text-muted-foreground">
+                              <FileText className="h-3 w-3 mt-0.5 flex-shrink-0" />
+                              <span>Dans votre COA, cherchez la section "Cannabinoids" → "CBD" ou "CBD Total". Exprimez en pourcentage (ex: 14.2%).</span>
+                            </div>
+                          </FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -504,8 +535,14 @@ const SubmitEntry = () => {
                             {...field}
                           />
                         </FormControl>
-                        <FormDescription>
-                          Liste les principaux terpènes présents dans votre variété
+                        <FormDescription className="text-xs">
+                          <div className="flex items-start gap-1 text-muted-foreground mb-1">
+                            <FileText className="h-3 w-3 mt-0.5 flex-shrink-0" />
+                            <span>Dans votre COA, cherchez la section "Terpenes" ou "Terpènes". Liste les principaux avec leur pourcentage si disponible (ex: Myrcène 1.2%, Limonène 0.8%, Caryophyllène 0.5%).</span>
+                          </div>
+                          <div className="text-muted-foreground">
+                            Exemple : Myrcene, Limonene, Caryophyllene ou Myrcene 1.2%, Limonene 0.8%
+                          </div>
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -570,18 +607,33 @@ const SubmitEntry = () => {
                     </div>
 
                     <div>
-                      <Label>Certificat d'analyse (COA)</Label>
+                      <div className="flex items-center gap-2 mb-2">
+                        <Label>Certificat d'analyse (COA)</Label>
+                        <HelpCircle className="h-4 w-4 text-muted-foreground" />
+                      </div>
+                      <div className="mb-3 p-3 bg-muted/50 rounded-lg border border-border/50">
+                        <div className="flex items-start gap-2 text-xs text-muted-foreground">
+                          <Info className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                          <div className="space-y-1">
+                            <p className="font-medium text-foreground">Votre COA doit contenir :</p>
+                            <ul className="list-disc list-inside space-y-0.5 ml-1">
+                              <li>Taux THC (section "Cannabinoids" ou "THC Total")</li>
+                              <li>Taux CBD (section "Cannabinoids" ou "CBD")</li>
+                              <li>Profil terpénique (section "Terpenes" ou "Terpènes")</li>
+                              <li>Nom du laboratoire et date d'analyse</li>
+                            </ul>
+                            <p className="text-muted-foreground mt-2">Formats acceptés : PDF, JPG, PNG</p>
+                          </div>
+                        </div>
+                      </div>
                       <div className="mt-2 space-y-2">
                         {existingEntry?.coa_url && !coaFile && (
                           <div className="flex items-center gap-2">
-                            <a
-                              href={existingEntry.coa_url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-sm text-accent hover:underline"
-                            >
-                              Voir le document actuel
-                            </a>
+                            <COAViewer
+                              entryId={existingEntry.id}
+                              coaUrl={existingEntry.coa_url}
+                              variant="link"
+                            />
                           </div>
                         )}
                         <div className="flex items-center gap-4">

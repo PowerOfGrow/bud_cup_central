@@ -10,6 +10,10 @@ export interface EntryComment {
   content: string;
   created_at: string;
   updated_at: string;
+  status?: 'pending' | 'approved' | 'rejected' | 'hidden';
+  spam_score?: number;
+  flagged_as_spam?: boolean;
+  moderation_reason?: string;
   user?: {
     id: string;
     display_name: string;
@@ -32,6 +36,7 @@ export const useComments = (entryId: string) => {
           user:profiles!entry_comments_user_id_fkey(id, display_name, avatar_url)
         `)
         .eq("entry_id", entryId)
+        .in("status", ["approved", "pending"]) // Afficher seulement les commentaires approuvés ou en attente
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -40,31 +45,51 @@ export const useComments = (entryId: string) => {
     enabled: !!entryId,
   });
 
-  // Ajouter un commentaire
+  // Ajouter un commentaire (avec modération automatique)
   const addCommentMutation = useMutation({
     mutationFn: async (content: string) => {
       if (!user?.id) throw new Error("Utilisateur non authentifié");
       if (!content.trim()) throw new Error("Le commentaire ne peut pas être vide");
 
-      const { data, error } = await supabase
+      // Utiliser la fonction RPC avec modération automatique
+      const { data, error } = await supabase.rpc("create_comment_with_moderation", {
+        p_entry_id: entryId,
+        p_user_id: user.id,
+        p_content: content.trim(),
+      });
+
+      if (error) throw error;
+
+      // Si rate limit dépassé
+      if (!data.success) {
+        throw new Error(data.message || "Limite de commentaires dépassée");
+      }
+
+      // Récupérer le commentaire créé
+      const { data: commentData, error: fetchError } = await supabase
         .from("entry_comments")
-        .insert({
-          entry_id: entryId,
-          user_id: user.id,
-          content: content.trim(),
-        })
         .select(`
           *,
           user:profiles!entry_comments_user_id_fkey(id, display_name, avatar_url)
         `)
+        .eq("id", data.comment_id)
         .single();
 
-      if (error) throw error;
-      return data as EntryComment;
+      if (fetchError) throw fetchError;
+
+      const comment = commentData as EntryComment;
+
+      // Afficher un message différent selon le statut
+      if (comment.status === "pending") {
+        toast.info("Votre commentaire est en attente de modération");
+      } else {
+        toast.success("Commentaire ajouté !");
+      }
+
+      return comment;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["comments", entryId] });
-      toast.success("Commentaire ajouté !");
     },
     onError: (error: any) => {
       toast.error(error.message || "Erreur lors de l'ajout du commentaire");
@@ -119,6 +144,33 @@ export const useComments = (entryId: string) => {
     },
   });
 
+  // Signaler un commentaire
+  const reportCommentMutation = useMutation({
+    mutationFn: async ({ commentId, reason }: { commentId: string; reason: string }) => {
+      if (!user?.id) throw new Error("Utilisateur non authentifié");
+
+      const { data, error } = await supabase.rpc("report_comment", {
+        p_comment_id: commentId,
+        p_reporter_id: user.id,
+        p_reason: reason,
+      });
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["comments", entryId] });
+      toast.success("Commentaire signalé. Merci pour votre vigilance !");
+    },
+    onError: (error: any) => {
+      if (error.message?.includes("unique")) {
+        toast.error("Vous avez déjà signalé ce commentaire");
+      } else {
+        toast.error(error.message || "Erreur lors du signalement");
+      }
+    },
+  });
+
   return {
     comments: comments || [],
     isLoading,
@@ -126,6 +178,9 @@ export const useComments = (entryId: string) => {
     addComment: addCommentMutation.mutate,
     updateComment: updateCommentMutation.mutate,
     deleteComment: deleteCommentMutation.mutate,
+    reportComment: async (commentId: string, reason: string) => {
+      reportCommentMutation.mutate({ commentId, reason });
+    },
     isAdding: addCommentMutation.isPending,
     isUpdating: updateCommentMutation.isPending,
     isDeleting: deleteCommentMutation.isPending,

@@ -1,11 +1,14 @@
 import { useState } from "react";
 import { useComments } from "@/hooks/use-comments";
 import { useAuth } from "@/hooks/use-auth";
+import { supabase } from "@/integrations/supabase/client";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { MessageSquare, Send, Edit2, Trash2, X } from "lucide-react";
+import { MessageSquare, Send, Edit2, Trash2, X, Flag, AlertTriangle } from "lucide-react";
+import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
 import { LoadingState } from "./LoadingState";
@@ -19,11 +22,14 @@ interface CommentsSectionProps {
 
 export const CommentsSection = ({ entryId, entryName }: CommentsSectionProps) => {
   const { user, profile } = useAuth();
-  const { comments, isLoading, error, addComment, updateComment, deleteComment, isAdding, canEdit } = useComments(entryId);
+  const { comments, isLoading, error, addComment, updateComment, deleteComment, isAdding, canEdit, reportComment } = useComments(entryId);
   const [newComment, setNewComment] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingContent, setEditingContent] = useState("");
+  const [reportingId, setReportingId] = useState<string | null>(null);
+  const [reportReason, setReportReason] = useState("");
   const confirm = useConfirm();
+  const isOrganizer = profile?.role === "organizer";
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -125,26 +131,39 @@ export const CommentsSection = ({ entryId, entryName }: CommentsSectionProps) =>
                           {comment.updated_at !== comment.created_at && " (modifié)"}
                         </p>
                       </div>
-                      {canEdit(comment) && !isEditing && (
-                        <div className="flex gap-2">
+                      <div className="flex gap-2">
+                        {canEdit(comment) && !isEditing && (
+                          <>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={() => handleStartEdit(comment)}
+                            >
+                              <Edit2 className="h-3 w-3" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-destructive"
+                              onClick={() => handleDelete(comment.id)}
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </>
+                        )}
+                        {user && comment.id !== reportingId && (
                           <Button
                             variant="ghost"
                             size="icon"
                             className="h-8 w-8"
-                            onClick={() => handleStartEdit(comment)}
+                            onClick={() => setReportingId(comment.id)}
+                            title="Signaler ce commentaire"
                           >
-                            <Edit2 className="h-3 w-3" />
+                            <Flag className="h-3 w-3" />
                           </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-destructive"
-                            onClick={() => handleDelete(comment.id)}
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      )}
+                        )}
+                      </div>
                     </div>
                     {isEditing ? (
                       <div className="space-y-2">
@@ -168,7 +187,59 @@ export const CommentsSection = ({ entryId, entryName }: CommentsSectionProps) =>
                         </div>
                       </div>
                     ) : (
-                      <p className="text-sm text-foreground whitespace-pre-wrap">{comment.content}</p>
+                      <>
+                        {comment.status === 'pending' && (
+                          <Badge variant="outline" className="mb-2">
+                            <AlertTriangle className="h-3 w-3 mr-1" />
+                            En attente de modération
+                          </Badge>
+                        )}
+                        {reportingId === comment.id ? (
+                          <div className="space-y-2 p-3 bg-muted rounded-lg">
+                            <label className="text-xs font-medium">Raison du signalement :</label>
+                            <select
+                              value={reportReason}
+                              onChange={(e) => setReportReason(e.target.value)}
+                              className="w-full px-3 py-2 text-sm border rounded-md"
+                            >
+                              <option value="">Sélectionnez une raison</option>
+                              <option value="spam">Spam</option>
+                              <option value="inappropriate">Contenu inapproprié</option>
+                              <option value="harassment">Harcèlement</option>
+                              <option value="fake">Informations erronées</option>
+                              <option value="other">Autre</option>
+                            </select>
+                            <div className="flex gap-2">
+                              <Button
+                                size="sm"
+                                onClick={async () => {
+                                  if (!reportReason) {
+                                    toast.error("Veuillez sélectionner une raison");
+                                    return;
+                                  }
+                                  await reportComment(comment.id, reportReason);
+                                  setReportingId(null);
+                                  setReportReason("");
+                                }}
+                              >
+                                Signaler
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => {
+                                  setReportingId(null);
+                                  setReportReason("");
+                                }}
+                              >
+                                Annuler
+                              </Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <p className="text-sm text-foreground whitespace-pre-wrap">{comment.content}</p>
+                        )}
+                      </>
                     )}
                   </div>
                 </div>

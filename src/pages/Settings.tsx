@@ -8,6 +8,7 @@ import { LoadingState } from "@/components/LoadingState";
 import { ErrorState } from "@/components/ErrorState";
 import Header from "@/components/Header";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { PrivacyOperations } from "@/components/PrivacyOperations";
 import { Bell, Mail, Smartphone, Settings as SettingsIcon } from "lucide-react";
 
 const Settings = () => {
@@ -317,6 +318,11 @@ const Settings = () => {
                   )}
                 </CardContent>
               </Card>
+
+              {/* Privacy Operations - RGPD */}
+              <div className="mt-8">
+                <PrivacyOperations />
+              </div>
             </div>
           </div>
         </div>

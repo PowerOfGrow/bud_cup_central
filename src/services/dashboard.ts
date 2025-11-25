@@ -80,10 +80,11 @@ export async function fetchViewerDashboard(profileId: string) {
 }
 
 export async function fetchProducerDashboard(profileId: string) {
-  const { data, error } = await supabase
-    .from("entries")
-    .select(
-      `
+  const [{ data: entriesData, error: entriesError }, { data: contestsData, error: contestsError }] = await Promise.all([
+    supabase
+      .from("entries")
+      .select(
+        `
       *,
       contest:contests (
         id,
@@ -95,13 +96,23 @@ export async function fetchProducerDashboard(profileId: string) {
       judge_scores(overall_score),
       public_votes(score)
     `,
-    )
-    .eq("producer_id", profileId)
-    .order("updated_at", { ascending: false });
+      )
+      .eq("producer_id", profileId)
+      .order("updated_at", { ascending: false }),
+    // Récupérer tous les concours en cours d'inscription pour les deadlines
+    supabase
+      .from("contests")
+      .select("id, name, status, start_date, registration_close_date, end_date")
+      .eq("status", "registration")
+      .not("registration_close_date", "is", null)
+      .gt("registration_close_date", new Date().toISOString())
+      .order("registration_close_date", { ascending: true }),
+  ]);
 
-  if (error) throw new Error(error.message);
+  if (entriesError) throw new Error(entriesError.message);
+  if (contestsError) throw new Error(contestsError.message);
 
-  const entries = (data as ProducerEntryRow[]) ?? [];
+  const entries = (entriesData as ProducerEntryRow[]) ?? [];
   const totals = {
     totalEntries: entries.length,
     approved: entries.filter((entry) => entry.status === "approved").length,
@@ -131,11 +142,31 @@ export async function fetchProducerDashboard(profileId: string) {
     };
   });
 
+  // Compter les entrées par concours pour les deadlines
+  const entriesByContest = new Map<string, number>();
+  entries.forEach((entry) => {
+    if (entry.contest?.id) {
+      entriesByContest.set(entry.contest.id, (entriesByContest.get(entry.contest.id) || 0) + 1);
+    }
+  });
+
+  // Formater les deadlines avec le nombre d'entrées
+  const deadlines = (contestsData || []).map((contest) => ({
+    contest_id: contest.id,
+    contest_name: contest.name,
+    contest_status: contest.status,
+    registration_close_date: contest.registration_close_date,
+    start_date: contest.start_date,
+    end_date: contest.end_date,
+    entries_count: entriesByContest.get(contest.id) || 0,
+  }));
+
   return {
     totals,
     overallAverage,
     nextDeadline: nextDeadline ?? null,
     entries: normalizedEntries,
+    deadlines,
   };
 }
 
