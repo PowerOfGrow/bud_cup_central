@@ -24,6 +24,7 @@ import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import Header from "@/components/Header";
+import { useRealtimeEntries } from "@/hooks/use-realtime-results";
 
 const statusLabel: Record<string, string> = {
   registration: "Inscriptions ouvertes",
@@ -200,6 +201,9 @@ const Contests = () => {
     isLoading: isLoadingEntries,
     error: entriesError,
   } = useContestEntries(selectedContestId ?? undefined);
+
+  // Activer les mises à jour en temps réel pour les entrées
+  useRealtimeEntries(selectedContestId ?? undefined);
 
   // Filtrer et trier les entrées
   const filteredAndSortedEntries = useMemo(() => {

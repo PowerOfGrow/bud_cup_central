@@ -15,6 +15,7 @@ import { EntryBadges } from "@/components/EntryBadges";
 import { ManageEntryBadges } from "@/components/ManageEntryBadges";
 import { toast } from "sonner";
 import { Sparkles, CheckCircle2 } from "lucide-react";
+import { useRealtimeResults } from "@/hooks/use-realtime-results";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -34,6 +35,9 @@ const ContestResults = () => {
   const queryClient = useQueryClient();
   const [showAutoBadgeDialog, setShowAutoBadgeDialog] = useState(false);
   const [includePeopleChoice, setIncludePeopleChoice] = useState(true);
+
+  // Activer les mises à jour en temps réel
+  useRealtimeResults(contestId);
 
   // Récupérer les informations du concours
   const { data: contest, isLoading: contestLoading } = useQuery({
@@ -246,6 +250,12 @@ const ContestResults = () => {
 
           {entries && entries.length > 0 ? (
             <div className="space-y-6">
+              {/* Indicateur temps réel */}
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+                <span>Mise à jour en temps réel activée</span>
+              </div>
+              
               {/* Podium */}
               {entries.length >= 3 && (
                 <div className="grid grid-cols-3 gap-4 mb-12">
