@@ -928,6 +928,13 @@ const OrganizerPanel = () => {
                 <span className="text-xs text-muted-foreground mt-1">Commentaires</span>
               </Link>
             </Button>
+            <Button variant="outline" className="h-auto flex-col items-start justify-start p-4 border-2 border-destructive/50" asChild>
+              <Link to="/admin">
+                <Shield className="h-5 w-5 mb-2" />
+                <span className="font-semibold">Administration</span>
+                <span className="text-xs text-muted-foreground mt-1">Gestion utilisateurs</span>
+              </Link>
+            </Button>
             <Button variant="outline" className="h-auto flex-col items-start justify-start p-4" asChild>
               <Link to="/settings">
                 <Settings className="h-5 w-5 mb-2" />

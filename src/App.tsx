@@ -36,6 +36,7 @@ const EntryAuditHistoryPage = lazy(() => import("./pages/EntryAuditHistory"));
 const JudgeBiasAnalysisPage = lazy(() => import("./pages/JudgeBiasAnalysis"));
 const ModerateCommentsPage = lazy(() => import("./pages/ModerateComments"));
 const AuthCallback = lazy(() => import("./pages/AuthCallback"));
+const AdminPage = lazy(() => import("./pages/Admin"));
 
 // Loading component
 const PageLoader = () => (
@@ -151,6 +152,14 @@ const App = () => (
           <Route path="/legal/disclaimer" element={<Disclaimer />} />
           <Route path="/legal/cookies" element={<Cookies />} />
           <Route path="/auth/callback" element={<AuthCallback />} />
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute requiredRole="organizer">
+                <AdminPage />
+              </ProtectedRoute>
+            }
+          />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
           </Routes>
