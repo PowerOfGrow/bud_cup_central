@@ -210,6 +210,25 @@ const Contests = () => {
     error: entriesError,
   } = useContestEntries(selectedContestId ?? undefined);
 
+  // Charger les catégories disponibles pour le concours sélectionné (custom ou globales)
+  const { data: availableCategories } = useQuery({
+    queryKey: ["available-categories", selectedContestId],
+    queryFn: async () => {
+      if (!selectedContestId) return [];
+      
+      const { data, error } = await supabase
+        .from("available_categories_for_contest")
+        .select("*")
+        .eq("contest_id", selectedContestId)
+        .order("display_order", { ascending: true })
+        .order("name", { ascending: true });
+
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!selectedContestId,
+  });
+
   // Activer les mises à jour en temps réel pour les entrées
   useRealtimeEntries(selectedContestId ?? undefined);
 
@@ -231,9 +250,19 @@ const Contests = () => {
       );
     }
 
-    // Filtre par catégorie
+    // Filtre par catégorie (gère les catégories custom et globales)
     if (categoryFilter !== "all") {
-      filtered = filtered.filter((entry) => entry.category === categoryFilter);
+      filtered = filtered.filter((entry) => {
+        // Vérifier si c'est une catégorie custom
+        if (entry.contest_category_id && entry.contest_category_id === categoryFilter) {
+          return true;
+        }
+        // Sinon vérifier l'enum global
+        if (entry.category === categoryFilter) {
+          return true;
+        }
+        return false;
+      });
     }
 
     // Tri
@@ -439,12 +468,26 @@ const Contests = () => {
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="all">Toutes les catégories</SelectItem>
-                          <SelectItem value="indica">Indica</SelectItem>
-                          <SelectItem value="sativa">Sativa</SelectItem>
-                          <SelectItem value="hybrid">Hybrid</SelectItem>
-                          <SelectItem value="outdoor">Outdoor</SelectItem>
-                          <SelectItem value="hash">Hash</SelectItem>
-                          <SelectItem value="other">Autre</SelectItem>
+                          {availableCategories && availableCategories.length > 0 ? (
+                            availableCategories.map((cat) => (
+                              <SelectItem 
+                                key={cat.category_id || cat.slug} 
+                                value={cat.category_id || cat.slug || ""}
+                              >
+                                {cat.name}
+                              </SelectItem>
+                            ))
+                          ) : (
+                            // Fallback : catégories globales par défaut
+                            <>
+                              <SelectItem value="indica">Indica</SelectItem>
+                              <SelectItem value="sativa">Sativa</SelectItem>
+                              <SelectItem value="hybrid">Hybrid</SelectItem>
+                              <SelectItem value="outdoor">Outdoor</SelectItem>
+                              <SelectItem value="hash">Hash</SelectItem>
+                              <SelectItem value="other">Autre</SelectItem>
+                            </>
+                          )}
                         </SelectContent>
                       </Select>
 
