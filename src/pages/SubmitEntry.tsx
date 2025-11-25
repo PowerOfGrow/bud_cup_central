@@ -84,34 +84,6 @@ const SubmitEntry = () => {
   // État pour suivre le concours sélectionné
   const [selectedContestId, setSelectedContestId] = useState<string | null>(contestId || null);
 
-  // Récupérer la limite THC du concours sélectionné
-  const { data: selectedContest } = useQuery({
-    queryKey: ["contest", selectedContestId, "thc-limit"],
-    queryFn: async () => {
-      if (!selectedContestId) return null;
-      const { data, error } = await supabase
-        .from("contests")
-        .select("id, name, thc_limit, applicable_countries, legal_disclaimer")
-        .eq("id", selectedContestId)
-        .single();
-
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!selectedContestId,
-  });
-
-  // Limite THC du concours (par défaut 0.3%)
-  const thcLimit = selectedContest?.thc_limit ?? 0.3;
-
-  // Mettre à jour selectedContestId quand le form change
-  const watchedContestId = form.watch("contest_id");
-  useEffect(() => {
-    if (watchedContestId) {
-      setSelectedContestId(watchedContestId);
-    }
-  }, [watchedContestId]);
-
   // Charger l'entrée à éditer si editEntryId est présent
   const { data: existingEntry, isLoading: loadingEntry } = useQuery({
     queryKey: ["entry", editEntryId],
@@ -144,6 +116,34 @@ const SubmitEntry = () => {
     },
   });
 
+  // Récupérer la limite THC du concours sélectionné
+  const { data: selectedContest } = useQuery({
+    queryKey: ["contest", selectedContestId, "thc-limit"],
+    queryFn: async () => {
+      if (!selectedContestId) return null;
+      const { data, error } = await supabase
+        .from("contests")
+        .select("id, name, thc_limit, applicable_countries, legal_disclaimer")
+        .eq("id", selectedContestId)
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!selectedContestId,
+  });
+
+  // Limite THC du concours (par défaut 0.3%)
+  const thcLimit = selectedContest?.thc_limit ?? 0.3;
+
+  // Mettre à jour selectedContestId quand le form change
+  const watchedContestId = form.watch("contest_id");
+  useEffect(() => {
+    if (watchedContestId) {
+      setSelectedContestId(watchedContestId);
+    }
+  }, [watchedContestId]);
+
   // Charger les données de l'entrée existante dans le formulaire
   useEffect(() => {
     if (existingEntry) {
@@ -158,6 +158,10 @@ const SubmitEntry = () => {
         batch_code: existingEntry.batch_code || "",
         submission_notes: existingEntry.submission_notes || "",
       });
+      // Mettre à jour selectedContestId si on charge une entrée existante
+      if (existingEntry.contest_id) {
+        setSelectedContestId(existingEntry.contest_id);
+      }
     }
   }, [existingEntry, form]);
 
