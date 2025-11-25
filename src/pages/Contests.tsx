@@ -19,14 +19,14 @@ import { useAuth } from "@/hooks/use-auth";
 import { usePagination } from "@/hooks/use-pagination";
 import { PaginationControls } from "@/components/PaginationControls";
 import { useFavorites } from "@/hooks/use-favorites";
-import { Heart, Share2, MessageSquare } from "lucide-react";
-import { toast } from "sonner";
+import { Heart, MessageSquare } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import Header from "@/components/Header";
 import { useRealtimeEntries } from "@/hooks/use-realtime-results";
 import { CategoryBadge } from "@/components/CategoryBadge";
 import { QRCodeDisplay } from "@/components/QRCodeDisplay";
+import { SocialShare } from "@/components/SocialShare";
 
 const statusLabel: Record<string, string> = {
   registration: "Inscriptions ouvertes",
@@ -59,24 +59,9 @@ const EntryCard = ({ entry, profile }: { entry: any; profile: any }) => {
     },
   });
 
-  const handleShare = () => {
-    const url = `${window.location.origin}/contests`;
-    const text = `Découvrez ${entry.strain_name} sur CBD Flower Cup !`;
-    
-    if (navigator.share) {
-      navigator.share({
-        title: entry.strain_name,
-        text: text,
-        url: url,
-      }).catch(() => {
-        // Fallback si l'utilisateur annule
-      });
-    } else {
-      // Fallback : copier dans le presse-papiers
-      navigator.clipboard.writeText(`${text} ${url}`);
-      toast.success("Lien copié dans le presse-papiers !");
-    }
-  };
+  // URL de partage pour cette entrée spécifique
+  const entryShareUrl = `${window.location.origin}/vote/${entry.id}`;
+  const entryShareText = `Découvrez ${entry.strain_name} sur CBD Flower Cup !`;
 
   return (
     <Card className="border-border/80 hover:border-accent/50 transition-all">
@@ -112,15 +97,12 @@ const EntryCard = ({ entry, profile }: { entry: any; profile: any }) => {
                   }`}
                 />
               </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={handleShare}
-                className="h-8 w-8"
-                title="Partager"
-              >
-                <Share2 className="h-4 w-4 text-muted-foreground" />
-              </Button>
+              <SocialShare
+                url={entryShareUrl}
+                title={entry.strain_name}
+                description={entryShareText}
+                variant="icon"
+              />
               <QRCodeDisplay
                 entryId={entry.id}
                 entryName={entry.strain_name}

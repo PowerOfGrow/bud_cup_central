@@ -5,12 +5,12 @@ import { Button } from "@/components/ui/button";
 import { useFavorites } from "@/hooks/use-favorites";
 import { LoadingState } from "@/components/LoadingState";
 import { ErrorState } from "@/components/ErrorState";
-import { Heart, ArrowLeft, Share2, Vote } from "lucide-react";
+import { Heart, ArrowLeft, Vote } from "lucide-react";
+import { SocialShare } from "@/components/SocialShare";
 import Header from "@/components/Header";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { usePagination } from "@/hooks/use-pagination";
 import { PaginationControls } from "@/components/PaginationControls";
-import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 
@@ -88,21 +88,6 @@ const Favorites = () => {
     itemsPerPage: 6,
   });
 
-  const handleShare = (entryName: string) => {
-    const url = `${window.location.origin}/contests`;
-    const text = `Découvrez ${entryName} sur CBD Flower Cup !`;
-    
-    if (navigator.share) {
-      navigator.share({
-        title: entryName,
-        text: text,
-        url: url,
-      }).catch(() => {});
-    } else {
-      navigator.clipboard.writeText(`${text} ${url}`);
-      toast.success("Lien copié dans le presse-papiers !");
-    }
-  };
 
   if (isLoading || entriesLoading) {
     return (
@@ -166,14 +151,12 @@ const Favorites = () => {
                           >
                             <Heart className="h-4 w-4 fill-red-500 text-red-500" />
                           </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleShare(entry.strain_name)}
-                            className="h-8 w-8"
-                          >
-                            <Share2 className="h-4 w-4 text-muted-foreground" />
-                          </Button>
+                          <SocialShare
+                            url={`${window.location.origin}/vote/${entry.id}`}
+                            title={entry.strain_name}
+                            description={`Découvrez ${entry.strain_name} sur CBD Flower Cup !`}
+                            variant="icon"
+                          />
                         </div>
                       </CardHeader>
                       <CardContent className="grid gap-4 md:grid-cols-3">
