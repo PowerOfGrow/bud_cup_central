@@ -25,6 +25,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import Header from "@/components/Header";
 import { useRealtimeEntries } from "@/hooks/use-realtime-results";
+import { QRCodeDisplay } from "@/components/QRCodeDisplay";
 
 const statusLabel: Record<string, string> = {
   registration: "Inscriptions ouvertes",
