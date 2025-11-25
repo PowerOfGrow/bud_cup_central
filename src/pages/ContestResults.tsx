@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Award, Trophy, Medal, Star, ArrowLeft, TrendingUp, Sparkles, Download, FileText, CheckCircle2 } from "lucide-react";
 import { generateWinnerCertificate, type CertificateData } from "@/components/CertificateGenerator";
+import { QRCodeDisplay } from "@/components/QRCodeDisplay";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -324,25 +325,32 @@ const ContestResults = () => {
                       <div className="text-sm text-muted-foreground">
                         Jury: {entries[1].judgeAverage}/100 • Public: {entries[1].publicAverage.toFixed(1)}/5
                       </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="mt-4 gap-2"
-                        onClick={() => handleGenerateCertificate(entries[1], 2)}
-                        disabled={generatingCertificate === entries[1].id}
-                      >
-                        {generatingCertificate === entries[1].id ? (
-                          <>
-                            <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                            Génération...
-                          </>
-                        ) : (
-                          <>
-                            <FileText className="h-4 w-4" />
-                            Télécharger le certificat
-                          </>
-                        )}
-                      </Button>
+                      <div className="flex gap-2 mt-4">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="gap-2 flex-1"
+                          onClick={() => handleGenerateCertificate(entries[1], 2)}
+                          disabled={generatingCertificate === entries[1].id}
+                        >
+                          {generatingCertificate === entries[1].id ? (
+                            <>
+                              <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                              Génération...
+                            </>
+                          ) : (
+                            <>
+                              <FileText className="h-4 w-4" />
+                              Certificat
+                            </>
+                          )}
+                        </Button>
+                        <QRCodeDisplay
+                          entryId={entries[1].id}
+                          entryName={entries[1].strain_name}
+                          variant="button"
+                        />
+                      </div>
                     </CardContent>
                   </Card>
 
@@ -365,25 +373,32 @@ const ContestResults = () => {
                       <div className="text-sm text-muted-foreground">
                         Jury: {entries[0].judgeAverage}/100 • Public: {entries[0].publicAverage.toFixed(1)}/5
                       </div>
-                      <Button
-                        variant="default"
-                        size="sm"
-                        className="mt-4 gap-2"
-                        onClick={() => handleGenerateCertificate(entries[0], 1)}
-                        disabled={generatingCertificate === entries[0].id}
-                      >
-                        {generatingCertificate === entries[0].id ? (
-                          <>
-                            <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                            Génération...
-                          </>
-                        ) : (
-                          <>
-                            <FileText className="h-4 w-4" />
-                            Télécharger le certificat
-                          </>
-                        )}
-                      </Button>
+                      <div className="flex gap-2 mt-4">
+                        <Button
+                          variant="default"
+                          size="sm"
+                          className="gap-2 flex-1"
+                          onClick={() => handleGenerateCertificate(entries[0], 1)}
+                          disabled={generatingCertificate === entries[0].id}
+                        >
+                          {generatingCertificate === entries[0].id ? (
+                            <>
+                              <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                              Génération...
+                            </>
+                          ) : (
+                            <>
+                              <FileText className="h-4 w-4" />
+                              Certificat
+                            </>
+                          )}
+                        </Button>
+                        <QRCodeDisplay
+                          entryId={entries[0].id}
+                          entryName={entries[0].strain_name}
+                          variant="button"
+                        />
+                      </div>
                     </CardContent>
                   </Card>
 
@@ -406,25 +421,32 @@ const ContestResults = () => {
                       <div className="text-sm text-muted-foreground">
                         Jury: {entries[2].judgeAverage}/100 • Public: {entries[2].publicAverage.toFixed(1)}/5
                       </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="mt-4 gap-2"
-                        onClick={() => handleGenerateCertificate(entries[2], 3)}
-                        disabled={generatingCertificate === entries[2].id}
-                      >
-                        {generatingCertificate === entries[2].id ? (
-                          <>
-                            <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                            Génération...
-                          </>
-                        ) : (
-                          <>
-                            <FileText className="h-4 w-4" />
-                            Télécharger le certificat
-                          </>
-                        )}
-                      </Button>
+                      <div className="flex gap-2 mt-4">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="gap-2 flex-1"
+                          onClick={() => handleGenerateCertificate(entries[2], 3)}
+                          disabled={generatingCertificate === entries[2].id}
+                        >
+                          {generatingCertificate === entries[2].id ? (
+                            <>
+                              <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                              Génération...
+                            </>
+                          ) : (
+                            <>
+                              <FileText className="h-4 w-4" />
+                              Certificat
+                            </>
+                          )}
+                        </Button>
+                        <QRCodeDisplay
+                          entryId={entries[2].id}
+                          entryName={entries[2].strain_name}
+                          variant="button"
+                        />
+                      </div>
                     </CardContent>
                   </Card>
                 </div>
@@ -507,13 +529,13 @@ const ContestResults = () => {
                             </div>
                           </div>
 
-                          {/* Bouton télécharger certificat pour toutes les entrées */}
+                          {/* Boutons télécharger certificat et QR code pour toutes les entrées */}
                           {contest?.status === "completed" && (
-                            <div className="mt-4 pt-4 border-t">
+                            <div className="mt-4 pt-4 border-t flex gap-2">
                               <Button
                                 variant="outline"
                                 size="sm"
-                                className="gap-2"
+                                className="gap-2 flex-1"
                                 onClick={() => handleGenerateCertificate(entry, index + 1)}
                                 disabled={generatingCertificate === entry.id}
                               >
@@ -525,10 +547,15 @@ const ContestResults = () => {
                                 ) : (
                                   <>
                                     <FileText className="h-4 w-4" />
-                                    Télécharger le certificat
+                                    Certificat
                                   </>
                                 )}
                               </Button>
+                              <QRCodeDisplay
+                                entryId={entry.id}
+                                entryName={entry.strain_name}
+                                variant="button"
+                              />
                             </div>
                           )}
                         </div>

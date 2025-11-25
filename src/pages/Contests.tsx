@@ -115,9 +115,15 @@ const EntryCard = ({ entry, profile }: { entry: any; profile: any }) => {
                 size="icon"
                 onClick={handleShare}
                 className="h-8 w-8"
+                title="Partager"
               >
                 <Share2 className="h-4 w-4 text-muted-foreground" />
               </Button>
+              <QRCodeDisplay
+                entryId={entry.id}
+                entryName={entry.strain_name}
+                variant="icon"
+              />
             </>
           )}
         </div>

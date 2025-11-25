@@ -13,6 +13,7 @@ import Header from "@/components/Header";
 import { LoadingState } from "@/components/LoadingState";
 import { CommentsSection } from "@/components/CommentsSection";
 import { ErrorState } from "@/components/ErrorState";
+import { QRCodeDisplay } from "@/components/QRCodeDisplay";
 
 const Vote = () => {
   const { entryId } = useParams<{ entryId: string }>();
@@ -173,11 +174,20 @@ const Vote = () => {
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-2xl">{entry.strain_name}</CardTitle>
-              <CardDescription>
-                {entry.producer?.display_name}
-                {entry.producer?.organization && ` • ${entry.producer.organization}`}
-              </CardDescription>
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex-1">
+                  <CardTitle className="text-2xl">{entry.strain_name}</CardTitle>
+                  <CardDescription>
+                    {entry.producer?.display_name}
+                    {entry.producer?.organization && ` • ${entry.producer.organization}`}
+                  </CardDescription>
+                </div>
+                <QRCodeDisplay
+                  entryId={entry.id}
+                  entryName={entry.strain_name}
+                  variant="icon"
+                />
+              </div>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-6">
