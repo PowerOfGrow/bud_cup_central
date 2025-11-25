@@ -54,7 +54,7 @@ const Register = () => {
             display_name: displayName,
             role: role,
           },
-          emailRedirectTo: `${window.location.origin}/dashboard`,
+          emailRedirectTo: `${window.location.origin}/auth/callback?type=signup`,
         },
       });
 
