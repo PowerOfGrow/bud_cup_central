@@ -120,10 +120,31 @@ export const COAViewer = ({
     }
 
     try {
-      // Le téléchargement est déjà logué dans getCOASignedUrl
-      const response = await fetch(signedUrl);
+      // Télécharger le fichier avec les bons headers
+      const response = await fetch(signedUrl, {
+        method: 'GET',
+        headers: {
+          'Accept': '*/*',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Erreur HTTP: ${response.status}`);
+      }
+
+      // Récupérer le type MIME depuis les headers ou le détecter depuis l'URL
+      const contentType = response.headers.get('Content-Type') || 
+        (signedUrl.toLowerCase().includes('.pdf') ? 'application/pdf' :
+         signedUrl.toLowerCase().includes('.jpg') || signedUrl.toLowerCase().includes('.jpeg') ? 'image/jpeg' :
+         signedUrl.toLowerCase().includes('.png') ? 'image/png' :
+         signedUrl.toLowerCase().includes('.webp') ? 'image/webp' :
+         'application/octet-stream');
+
+      // Créer le blob avec le bon type MIME
       const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
+      const typedBlob = new Blob([blob], { type: contentType });
+      
+      const url = window.URL.createObjectURL(typedBlob);
       const a = document.createElement("a");
       a.href = url;
       
@@ -135,10 +156,18 @@ export const COAViewer = ({
       const timestamp = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
       a.download = `COA_${sanitizedName}_${timestamp}.${extension}`;
       
+      // Définir le type MIME pour le téléchargement
+      a.type = contentType;
+      
       document.body.appendChild(a);
       a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+      
+      // Nettoyer après un court délai pour s'assurer que le téléchargement a démarré
+      setTimeout(() => {
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      }, 100);
+      
       toast.success("COA téléchargé avec succès");
     } catch (err) {
       console.error("Error downloading COA:", err);
