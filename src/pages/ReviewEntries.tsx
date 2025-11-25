@@ -60,6 +60,10 @@ const ReviewEntries = () => {
   const queryClient = useQueryClient();
   const [selectedEntry, setSelectedEntry] = useState<PendingEntry | null>(null);
   const [isValidationDialogOpen, setIsValidationDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isEmailDialogOpen, setIsEmailDialogOpen] = useState(false);
+  const [emailMessage, setEmailMessage] = useState("");
+  const [sendingEmail, setSendingEmail] = useState(false);
   
   // État du formulaire de validation
   const [validationForm, setValidationForm] = useState({
