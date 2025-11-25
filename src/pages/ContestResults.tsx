@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Award, Trophy, Medal, Star, ArrowLeft, TrendingUp, Sparkles, Download, FileText } from "lucide-react";
+import { Award, Trophy, Medal, Star, ArrowLeft, TrendingUp, Sparkles, Download, FileText, CheckCircle2 } from "lucide-react";
 import { generateWinnerCertificate, type CertificateData } from "@/components/CertificateGenerator";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,7 +15,6 @@ import { useAuth } from "@/hooks/use-auth";
 import { EntryBadges } from "@/components/EntryBadges";
 import { ManageEntryBadges } from "@/components/ManageEntryBadges";
 import { toast } from "sonner";
-import { Sparkles, CheckCircle2 } from "lucide-react";
 import { useRealtimeResults } from "@/hooks/use-realtime-results";
 import {
   AlertDialog,
