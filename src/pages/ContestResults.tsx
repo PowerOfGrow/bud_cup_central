@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Award, Trophy, Medal, Star, ArrowLeft, TrendingUp, Sparkles } from "lucide-react";
+import { Award, Trophy, Medal, Star, ArrowLeft, TrendingUp, Sparkles, Download, FileText } from "lucide-react";
+import { generateWinnerCertificate, type CertificateData } from "@/components/CertificateGenerator";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -35,6 +36,52 @@ const ContestResults = () => {
   const queryClient = useQueryClient();
   const [showAutoBadgeDialog, setShowAutoBadgeDialog] = useState(false);
   const [includePeopleChoice, setIncludePeopleChoice] = useState(true);
+  const [generatingCertificate, setGeneratingCertificate] = useState<string | null>(null);
+
+  // Fonction pour générer le certificat pour une entrée
+  const handleGenerateCertificate = async (entry: any, rank: number) => {
+    if (!contest) return;
+    
+    setGeneratingCertificate(entry.id);
+    try {
+      // Formater la date du concours
+      const contestDate = contest.start_date
+        ? new Date(contest.start_date).toLocaleDateString("fr-FR", {
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+          })
+        : new Date().toLocaleDateString("fr-FR", {
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+          });
+
+      const certificateData: CertificateData = {
+        contestName: contest.name,
+        contestDate,
+        entryName: entry.strain_name,
+        producerName: entry.producer?.display_name || "Producteur inconnu",
+        producerOrganization: entry.producer?.organization,
+        rank,
+        combinedScore: entry.combinedScore,
+        judgeAverage: entry.judgeAverage,
+        publicAverage: entry.publicAverage,
+        badges: entry.badges?.map((b: any) => ({
+          badge: b.badge,
+          label: b.label,
+        })),
+      };
+
+      await generateWinnerCertificate(certificateData);
+      toast.success("Certificat généré avec succès !");
+    } catch (error) {
+      console.error("Error generating certificate:", error);
+      toast.error("Erreur lors de la génération du certificat");
+    } finally {
+      setGeneratingCertificate(null);
+    }
+  };
 
   // Activer les mises à jour en temps réel
   useRealtimeResults(contestId);
@@ -278,6 +325,25 @@ const ContestResults = () => {
                       <div className="text-sm text-muted-foreground">
                         Jury: {entries[1].judgeAverage}/100 • Public: {entries[1].publicAverage.toFixed(1)}/5
                       </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="mt-4 gap-2"
+                        onClick={() => handleGenerateCertificate(entries[1], 2)}
+                        disabled={generatingCertificate === entries[1].id}
+                      >
+                        {generatingCertificate === entries[1].id ? (
+                          <>
+                            <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                            Génération...
+                          </>
+                        ) : (
+                          <>
+                            <FileText className="h-4 w-4" />
+                            Télécharger le certificat
+                          </>
+                        )}
+                      </Button>
                     </CardContent>
                   </Card>
 
@@ -300,6 +366,25 @@ const ContestResults = () => {
                       <div className="text-sm text-muted-foreground">
                         Jury: {entries[0].judgeAverage}/100 • Public: {entries[0].publicAverage.toFixed(1)}/5
                       </div>
+                      <Button
+                        variant="default"
+                        size="sm"
+                        className="mt-4 gap-2"
+                        onClick={() => handleGenerateCertificate(entries[0], 1)}
+                        disabled={generatingCertificate === entries[0].id}
+                      >
+                        {generatingCertificate === entries[0].id ? (
+                          <>
+                            <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                            Génération...
+                          </>
+                        ) : (
+                          <>
+                            <FileText className="h-4 w-4" />
+                            Télécharger le certificat
+                          </>
+                        )}
+                      </Button>
                     </CardContent>
                   </Card>
 
@@ -322,6 +407,25 @@ const ContestResults = () => {
                       <div className="text-sm text-muted-foreground">
                         Jury: {entries[2].judgeAverage}/100 • Public: {entries[2].publicAverage.toFixed(1)}/5
                       </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="mt-4 gap-2"
+                        onClick={() => handleGenerateCertificate(entries[2], 3)}
+                        disabled={generatingCertificate === entries[2].id}
+                      >
+                        {generatingCertificate === entries[2].id ? (
+                          <>
+                            <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                            Génération...
+                          </>
+                        ) : (
+                          <>
+                            <FileText className="h-4 w-4" />
+                            Télécharger le certificat
+                          </>
+                        )}
+                      </Button>
                     </CardContent>
                   </Card>
                 </div>
@@ -403,6 +507,31 @@ const ContestResults = () => {
                               </Badge>
                             </div>
                           </div>
+
+                          {/* Bouton télécharger certificat pour toutes les entrées */}
+                          {contest?.status === "completed" && (
+                            <div className="mt-4 pt-4 border-t">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="gap-2"
+                                onClick={() => handleGenerateCertificate(entry, index + 1)}
+                                disabled={generatingCertificate === entry.id}
+                              >
+                                {generatingCertificate === entry.id ? (
+                                  <>
+                                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                                    Génération...
+                                  </>
+                                ) : (
+                                  <>
+                                    <FileText className="h-4 w-4" />
+                                    Télécharger le certificat
+                                  </>
+                                )}
+                              </Button>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </CardContent>
