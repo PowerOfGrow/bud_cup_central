@@ -20,6 +20,7 @@ const SubmitEntry = lazy(() => import("./pages/SubmitEntry"));
 const JudgeEvaluation = lazy(() => import("./pages/JudgeEvaluation"));
 const ManageContestsPage = lazy(() => import("./pages/ManageContests"));
 const ManageContestJudges = lazy(() => import("./pages/ManageContestJudges"));
+const ManageContestCategories = lazy(() => import("./pages/ManageContestCategories"));
 const ContestResults = lazy(() => import("./pages/ContestResults"));
 const Notifications = lazy(() => import("./pages/Notifications"));
 const Favorites = lazy(() => import("./pages/Favorites"));
@@ -93,6 +94,10 @@ const App = () => (
           <Route
             path="/manage-contests/:contestId/judges"
             element={<ManageContestJudges />}
+          />
+          <Route
+            path="/manage-contests/:contestId/categories"
+            element={<ManageContestCategories />}
           />
           <Route
             path="/contests/:contestId/results"
