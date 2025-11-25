@@ -25,6 +25,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import Header from "@/components/Header";
 import { useRealtimeEntries } from "@/hooks/use-realtime-results";
+import { CategoryBadge } from "@/components/CategoryBadge";
 import { QRCodeDisplay } from "@/components/QRCodeDisplay";
 
 const statusLabel: Record<string, string> = {
@@ -87,7 +88,7 @@ const EntryCard = ({ entry, profile }: { entry: any; profile: any }) => {
           </CardDescription>
         </div>
         <div className="flex items-center gap-2">
-          <Badge className="bg-accent/10 text-accent capitalize">{entry.category}</Badge>
+          <CategoryBadge entryId={entry.id} fallbackCategory={entry.category} />
           {commentsCount !== undefined && commentsCount > 0 && (
             <Badge variant="secondary" className="flex items-center gap-1">
               <MessageSquare className="h-3 w-3" />

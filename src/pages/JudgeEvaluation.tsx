@@ -25,6 +25,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Header from "@/components/Header";
 import { LoadingState } from "@/components/LoadingState";
 import { ErrorState } from "@/components/ErrorState";
+import { useEntryCategoryName } from "@/hooks/use-entry-category";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 
 const evaluationSchema = z.object({
@@ -66,6 +67,9 @@ const JudgeEvaluation = () => {
     },
     enabled: !!entryId,
   });
+
+  // Récupérer le nom de catégorie (custom ou global)
+  const { data: categoryName } = useEntryCategoryName(entryId);
 
   // Vérifier si le juge a déjà évalué cette entrée
   const { data: existingScore } = useQuery({
@@ -316,7 +320,9 @@ const JudgeEvaluation = () => {
               </div>
               <div className="bg-muted/40 rounded-xl p-4">
                 <p className="text-sm text-muted-foreground mb-1">Catégorie</p>
-                <p className="text-lg font-semibold text-foreground capitalize">{entry.category}</p>
+                <p className="text-lg font-semibold text-foreground capitalize">
+                  {categoryName || entry.category || "Autre"}
+                </p>
               </div>
               <div className="bg-muted/40 rounded-xl p-4">
                 <p className="text-sm text-muted-foreground mb-1">Terpènes</p>

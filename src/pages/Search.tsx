@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { useGlobalSearch } from "@/hooks/use-global-search";
 import { LoadingState } from "@/components/LoadingState";
 import { ErrorState } from "@/components/ErrorState";
+import { CategoryBadge } from "@/components/CategoryBadge";
 import Header from "@/components/Header";
 import { usePagination } from "@/hooks/use-pagination";
 import { PaginationControls } from "@/components/PaginationControls";
@@ -275,9 +276,7 @@ const Search = () => {
                                         {entry.contestName && ` • ${entry.contestName}`}
                                       </CardDescription>
                                     </div>
-                                    <Badge className="bg-accent/10 text-accent capitalize">
-                                      {entry.category}
-                                    </Badge>
+                                    <CategoryBadge entryId={entry.id} fallbackCategory={entry.category} />
                                   </div>
                                 </CardHeader>
                                 <CardContent>
@@ -426,9 +425,7 @@ const Search = () => {
                                         {entry.contestName && ` • ${entry.contestName}`}
                                       </CardDescription>
                                     </div>
-                                    <Badge className="bg-accent/10 text-accent capitalize">
-                                      {entry.category}
-                                    </Badge>
+                                    <CategoryBadge entryId={entry.id} fallbackCategory={entry.category} />
                                   </div>
                                 </CardHeader>
                                 <CardContent>

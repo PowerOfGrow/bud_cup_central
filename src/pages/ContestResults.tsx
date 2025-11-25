@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Award, Trophy, Medal, Star, ArrowLeft, TrendingUp, Sparkles, Download, FileText, CheckCircle2 } from "lucide-react";
 import { generateWinnerCertificate, type CertificateData } from "@/components/CertificateGenerator";
 import { QRCodeDisplay } from "@/components/QRCodeDisplay";
+import { CategoryBadge } from "@/components/CategoryBadge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -523,9 +524,7 @@ const ContestResults = () => {
                             </div>
                             <div className="bg-muted/40 rounded-xl p-3">
                               <p className="text-xs text-muted-foreground mb-1">Catégorie</p>
-                              <Badge className="bg-accent/10 text-accent capitalize">
-                                {entry.category}
-                              </Badge>
+                              <CategoryBadge entryId={entry.id} fallbackCategory={entry.category} />
                             </div>
                           </div>
 

@@ -59,6 +59,13 @@ import {
 import Header from "@/components/Header";
 import { LoadingState } from "@/components/LoadingState";
 import { ErrorState } from "@/components/ErrorState";
+import { useEntryCategoryName } from "@/hooks/use-entry-category";
+
+// Composant helper pour afficher le nom de catégorie dans Admin
+const EntryCategoryName = ({ entryId, fallback }: { entryId: string; fallback?: string }) => {
+  const { data: categoryName } = useEntryCategoryName(entryId);
+  return <span className="capitalize">{categoryName || fallback || "Autre"}</span>;
+};
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { useAdminUsers, useSanctionsHistory, useBanUser, useUnbanUser, useDeleteUserAccount, useAdminKPIs, useEntriesWithCOA, type AdminUserStats, type SanctionHistory, type EntryWithCOA } from "@/hooks/use-admin";
 import { format } from "date-fns";
@@ -685,7 +692,8 @@ const Admin = () => {
                                     </span>
                                   )}
                                   <span>
-                                    <span className="font-medium">Catégorie:</span> {entry.category}
+                                    <span className="font-medium">Catégorie:</span>{" "}
+                                    <EntryCategoryName entryId={entry.id} fallback={entry.category} />
                                   </span>
                                 </div>
                                 {entry.coa_validated_at && (
