@@ -262,6 +262,7 @@ const ReviewEntries = () => {
                                 entryId={entry.id}
                                 coaUrl={entry.coa_url}
                                 variant="button"
+                                entryName={entry.strain_name}
                               />
                             )}
                             <Button

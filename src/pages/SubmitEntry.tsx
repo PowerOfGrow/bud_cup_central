@@ -626,7 +626,7 @@ const SubmitEntry = () => {
                               <li>Profil terpénique (section "Terpenes" ou "Terpènes")</li>
                               <li>Nom du laboratoire et date d'analyse</li>
                             </ul>
-                            <p className="text-muted-foreground mt-2">Formats acceptés : PDF, JPG, PNG</p>
+                            <p className="text-muted-foreground mt-2">Formats acceptés : PDF, JPG, PNG, WEBP (max 10 MB)</p>
                           </div>
                         </div>
                       </div>
@@ -643,7 +643,7 @@ const SubmitEntry = () => {
                         <div className="flex items-center gap-4">
                           <Input
                             type="file"
-                            accept=".pdf,.jpg,.jpeg,.png"
+                            accept=".pdf,.jpg,.jpeg,.png,.webp"
                             onChange={(e) => setCoaFile(e.target.files?.[0] || null)}
                             className="cursor-pointer"
                             disabled={uploadingDocument}

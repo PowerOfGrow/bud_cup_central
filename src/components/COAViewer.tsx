@@ -22,6 +22,7 @@ interface COAViewerProps {
   variant?: "button" | "link" | "icon";
   className?: string;
   showDownloadButton?: boolean;
+  entryName?: string; // Nom du produit/entrée pour le nom de fichier de téléchargement
 }
 
 export const COAViewer = ({
@@ -30,11 +31,13 @@ export const COAViewer = ({
   variant = "button",
   className,
   showDownloadButton = true,
+  entryName,
 }: COAViewerProps) => {
   const [signedUrl, setSignedUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isOpen, setIsOpen] = useState(false);
+  const [fileType, setFileType] = useState<"pdf" | "image" | "unknown">("unknown");
 
   useEffect(() => {
     // Si l'URL est déjà une signed URL ou une URL publique, on peut l'utiliser directement
@@ -83,6 +86,33 @@ export const COAViewer = ({
     }
   };
 
+  // Déterminer le type de fichier à partir de l'URL
+  const detectFileType = (url: string): "pdf" | "image" | "unknown" => {
+    const lowerUrl = url.toLowerCase();
+    if (lowerUrl.includes(".pdf") || lowerUrl.includes("application/pdf")) {
+      return "pdf";
+    }
+    if (
+      lowerUrl.includes(".jpg") ||
+      lowerUrl.includes(".jpeg") ||
+      lowerUrl.includes("image/jpeg") ||
+      lowerUrl.includes(".png") ||
+      lowerUrl.includes("image/png") ||
+      lowerUrl.includes(".webp") ||
+      lowerUrl.includes("image/webp")
+    ) {
+      return "image";
+    }
+    return "unknown";
+  };
+
+  // Obtenir l'extension du fichier pour le téléchargement
+  const getFileExtension = (url: string): string => {
+    const match = url.match(/\.([a-z0-9]+)(?:\?|$)/i);
+    return match ? match[1] : "pdf";
+  };
+
+
   const handleDownload = async () => {
     if (!signedUrl) {
       toast.error("URL non disponible");
@@ -96,7 +126,15 @@ export const COAViewer = ({
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `COA_${entryId}_${Date.now()}.pdf`;
+      
+      // Générer un nom de fichier informatif
+      const extension = getFileExtension(signedUrl);
+      const sanitizedName = entryName
+        ? entryName.replace(/[^a-z0-9]/gi, "_").toLowerCase()
+        : entryId.substring(0, 8);
+      const timestamp = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
+      a.download = `COA_${sanitizedName}_${timestamp}.${extension}`;
+      
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
@@ -150,15 +188,44 @@ export const COAViewer = ({
               <DialogTitle>Certificat d'Analyse (COA)</DialogTitle>
               <DialogDescription>
                 Document confidentiel - CBD Flower Cup
+                {entryName && ` - ${entryName}`}
               </DialogDescription>
             </DialogHeader>
-            <div className="w-full h-[70vh] border rounded-lg overflow-hidden">
+            <div className="w-full h-[70vh] border rounded-lg overflow-hidden bg-muted/20">
               {signedUrl && (
-                <iframe
-                  src={signedUrl}
-                  className="w-full h-full"
-                  title="COA"
-                />
+                <>
+                  {fileType === "pdf" ? (
+                    <iframe
+                      src={signedUrl}
+                      className="w-full h-full"
+                      title="COA"
+                      style={{ border: "none" }}
+                    />
+                  ) : fileType === "image" ? (
+                    <div className="w-full h-full flex items-center justify-center p-4 overflow-auto">
+                      <img
+                        src={signedUrl}
+                        alt="Certificat d'Analyse"
+                        className="max-w-full max-h-full object-contain"
+                      />
+                    </div>
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <div className="text-center">
+                        <FileText className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                        <p className="text-muted-foreground mb-4">
+                          Format de fichier non reconnu
+                        </p>
+                        <Button variant="outline" asChild>
+                          <a href={signedUrl} target="_blank" rel="noopener noreferrer">
+                            <ExternalLink className="mr-2 h-4 w-4" />
+                            Ouvrir dans un nouvel onglet
+                          </a>
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </>
               )}
             </div>
             {showDownloadButton && signedUrl && (

@@ -198,3 +198,82 @@ export function useAdminKPIs() {
   });
 }
 
+// Interface pour les entrées avec COA
+export interface EntryWithCOA {
+  id: string;
+  strain_name: string;
+  category: string;
+  status: string;
+  coa_url: string | null;
+  thc_percent: number | null;
+  cbd_percent: number | null;
+  created_at: string;
+  coa_validated: boolean;
+  coa_validated_at: string | null;
+  producer_id: string;
+  producer_name: string;
+  producer_organization: string | null;
+  contest_id: string;
+  contest_name: string;
+}
+
+// Hook pour récupérer toutes les entrées avec COA
+export function useEntriesWithCOA(statusFilter?: string) {
+  return useQuery({
+    queryKey: ["admin", "entries-coa", statusFilter],
+    queryFn: async () => {
+      let query = supabase
+        .from("entries")
+        .select(`
+          id,
+          strain_name,
+          category,
+          status,
+          coa_url,
+          thc_percent,
+          cbd_percent,
+          created_at,
+          coa_validated,
+          coa_validated_at,
+          producer_id,
+          producer:profiles!entries_producer_id_fkey (
+            display_name,
+            organization
+          ),
+          contest_id,
+          contest:contests!entries_contest_id_fkey (
+            name
+          )
+        `)
+        .not("coa_url", "is", null)
+        .order("created_at", { ascending: false });
+
+      if (statusFilter && statusFilter !== "all") {
+        query = query.eq("status", statusFilter);
+      }
+
+      const { data, error } = await query;
+
+      if (error) throw error;
+
+      return (data || []).map((entry: any) => ({
+        id: entry.id,
+        strain_name: entry.strain_name,
+        category: entry.category,
+        status: entry.status,
+        coa_url: entry.coa_url,
+        thc_percent: entry.thc_percent,
+        cbd_percent: entry.cbd_percent,
+        created_at: entry.created_at,
+        coa_validated: entry.coa_validated,
+        coa_validated_at: entry.coa_validated_at,
+        producer_id: entry.producer_id,
+        producer_name: entry.producer?.display_name || "Producteur inconnu",
+        producer_organization: entry.producer?.organization || null,
+        contest_id: entry.contest_id,
+        contest_name: entry.contest?.name || "Concours inconnu",
+      })) as EntryWithCOA[];
+    },
+  });
+}
+

@@ -54,17 +54,19 @@ import {
   FileText,
   CheckCircle2,
   XCircle,
+  Download,
 } from "lucide-react";
 import Header from "@/components/Header";
 import { LoadingState } from "@/components/LoadingState";
 import { ErrorState } from "@/components/ErrorState";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
-import { useAdminUsers, useSanctionsHistory, useBanUser, useUnbanUser, useDeleteUserAccount, useAdminKPIs, type AdminUserStats, type SanctionHistory } from "@/hooks/use-admin";
+import { useAdminUsers, useSanctionsHistory, useBanUser, useUnbanUser, useDeleteUserAccount, useAdminKPIs, useEntriesWithCOA, type AdminUserStats, type SanctionHistory, type EntryWithCOA } from "@/hooks/use-admin";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { toast } from "sonner";
 import { usePagination } from "@/hooks/use-pagination";
 import { PaginationControls } from "@/components/PaginationControls";
+import { COAViewer } from "@/components/COAViewer";
 
 const Admin = () => {
   const [roleFilter, setRoleFilter] = useState<string>("all");
@@ -78,11 +80,14 @@ const Admin = () => {
   const [banType, setBanType] = useState<"warning" | "temporary_ban" | "permanent_ban">("temporary_ban");
   const [banExpiresAt, setBanExpiresAt] = useState("");
   const [viewingHistory, setViewingHistory] = useState<string | null>(null);
+  const [coaStatusFilter, setCoaStatusFilter] = useState<string>("all");
+  const [coaSearchQuery, setCoaSearchQuery] = useState("");
 
   // Récupérer les utilisateurs
   const { data: users, isLoading: usersLoading } = useAdminUsers(roleFilter);
   const { data: kpis, isLoading: kpisLoading } = useAdminKPIs();
   const { data: sanctionsHistory } = useSanctionsHistory(viewingHistory);
+  const { data: entriesWithCOA, isLoading: coaLoading } = useEntriesWithCOA(coaStatusFilter);
 
   const banUserMutation = useBanUser();
   const unbanUserMutation = useUnbanUser();
@@ -234,6 +239,10 @@ const Admin = () => {
               <TabsTrigger value="users">
                 <Users className="mr-2 h-4 w-4" />
                 Utilisateurs ({filteredUsers.length})
+              </TabsTrigger>
+              <TabsTrigger value="coa-documents">
+                <FileText className="mr-2 h-4 w-4" />
+                Documents COA
               </TabsTrigger>
               <TabsTrigger value="sanctions">
                 <Shield className="mr-2 h-4 w-4" />
@@ -580,6 +589,134 @@ const Admin = () => {
                   onNext={nextPage}
                   onPrevious={previousPage}
                 />
+              )}
+            </TabsContent>
+
+            {/* Documents COA */}
+            <TabsContent value="coa-documents" className="space-y-6">
+              {/* Filtres */}
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="flex flex-col md:flex-row gap-4">
+                    <div className="flex-1">
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          placeholder="Rechercher par nom de produit ou producteur..."
+                          value={coaSearchQuery}
+                          onChange={(e) => setCoaSearchQuery(e.target.value)}
+                          className="pl-10"
+                        />
+                      </div>
+                    </div>
+                    <Select value={coaStatusFilter} onValueChange={setCoaStatusFilter}>
+                      <SelectTrigger className="w-full md:w-[180px]">
+                        <Filter className="mr-2 h-4 w-4" />
+                        <SelectValue placeholder="Filtrer par statut" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Tous les statuts</SelectItem>
+                        <SelectItem value="draft">Brouillon</SelectItem>
+                        <SelectItem value="submitted">Soumis</SelectItem>
+                        <SelectItem value="under_review">En révision</SelectItem>
+                        <SelectItem value="approved">Approuvé</SelectItem>
+                        <SelectItem value="rejected">Rejeté</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Liste des entrées avec COA */}
+              {coaLoading ? (
+                <LoadingState message="Chargement des documents COA..." />
+              ) : entriesWithCOA && entriesWithCOA.length > 0 ? (
+                <div className="space-y-4">
+                  {entriesWithCOA
+                    .filter((entry) => {
+                      if (!coaSearchQuery) return true;
+                      const query = coaSearchQuery.toLowerCase();
+                      return (
+                        entry.strain_name.toLowerCase().includes(query) ||
+                        entry.producer_name.toLowerCase().includes(query) ||
+                        entry.contest_name.toLowerCase().includes(query)
+                      );
+                    })
+                    .map((entry) => (
+                      <Card key={entry.id}>
+                        <CardContent className="pt-6">
+                          <div className="flex items-start justify-between flex-wrap gap-4">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-2">
+                                <h3 className="font-semibold text-lg">{entry.strain_name}</h3>
+                                <Badge variant="secondary" className="capitalize text-xs">
+                                  {entry.status}
+                                </Badge>
+                                {entry.coa_validated && (
+                                  <Badge variant="outline" className="text-xs">
+                                    <CheckCircle2 className="h-3 w-3 mr-1" />
+                                    COA validé
+                                  </Badge>
+                                )}
+                                {!entry.coa_validated && entry.coa_url && (
+                                  <Badge variant="warning" className="text-xs">
+                                    <AlertTriangle className="h-3 w-3 mr-1" />
+                                    À valider
+                                  </Badge>
+                                )}
+                              </div>
+                              <div className="space-y-1 text-sm text-muted-foreground">
+                                <p>
+                                  <span className="font-medium">Producteur:</span> {entry.producer_name}
+                                  {entry.producer_organization && ` (${entry.producer_organization})`}
+                                </p>
+                                <p>
+                                  <span className="font-medium">Concours:</span> {entry.contest_name}
+                                </p>
+                                <div className="flex gap-4 mt-2">
+                                  {entry.thc_percent !== null && (
+                                    <span>
+                                      <span className="font-medium">THC:</span> {entry.thc_percent}%
+                                    </span>
+                                  )}
+                                  {entry.cbd_percent !== null && (
+                                    <span>
+                                      <span className="font-medium">CBD:</span> {entry.cbd_percent}%
+                                    </span>
+                                  )}
+                                  <span>
+                                    <span className="font-medium">Catégorie:</span> {entry.category}
+                                  </span>
+                                </div>
+                                {entry.coa_validated_at && (
+                                  <p className="text-xs">
+                                    <span className="font-medium">Validé le:</span>{" "}
+                                    {format(new Date(entry.coa_validated_at), "dd MMM yyyy à HH:mm", { locale: fr })}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex gap-2">
+                              {entry.coa_url && (
+                                <COAViewer
+                                  entryId={entry.id}
+                                  coaUrl={entry.coa_url}
+                                  variant="button"
+                                  entryName={entry.strain_name}
+                                />
+                              )}
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                </div>
+              ) : (
+                <Card>
+                  <CardContent className="pt-6 text-center text-muted-foreground">
+                    Aucun document COA trouvé
+                  </CardContent>
+                </Card>
               )}
             </TabsContent>
 
