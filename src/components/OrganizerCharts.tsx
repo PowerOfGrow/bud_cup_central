@@ -79,7 +79,7 @@ interface OrganizerChartsProps {
 export const OrganizerCharts = ({ timelineData, contestsData }: OrganizerChartsProps) => {
   return (
     <Suspense fallback={<LoadingState message="Chargement des graphiques…" />}>
-      <RechartsComponents timelineData={timelineData} contestsData={contestsData} />
+      <RechartsCharts timelineData={timelineData} contestsData={contestsData} />
     </Suspense>
   );
 };
