@@ -123,6 +123,35 @@ export function isSignedUrl(url: string): boolean {
 }
 
 /**
+ * Supprime un fichier COA du storage
+ * @param coaUrl URL complète du fichier COA
+ * @returns true si la suppression a réussi, false sinon
+ */
+export async function deleteCOAFile(coaUrl: string): Promise<boolean> {
+  try {
+    const filePath = extractFilePathFromUrl(coaUrl);
+    if (!filePath) {
+      console.error("Impossible d'extraire le chemin du fichier depuis l'URL");
+      return false;
+    }
+
+    const { error } = await supabase.storage
+      .from("entry-documents")
+      .remove([filePath]);
+
+    if (error) {
+      console.error("Error deleting COA file:", error);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error("Error in deleteCOAFile:", error);
+    return false;
+  }
+}
+
+/**
  * Cache pour les URLs signées (évite de régénérer trop souvent)
  */
 const signedUrlCache = new Map<string, { url: string; expiresAt: number }>();

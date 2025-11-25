@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, CheckCircle2, XCircle, FileText, Eye, AlertCircle, Shield } from "lucide-react";
+import { ArrowLeft, CheckCircle2, XCircle, FileText, Eye, AlertCircle, Shield, Trash2, Mail, Image as ImageIcon } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -16,6 +16,17 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { COAViewer } from "@/components/COAViewer";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { deleteCOAFile, extractFilePathFromUrl } from "@/services/storage";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
 import { usePagination } from "@/hooks/use-pagination";
@@ -149,6 +160,219 @@ const ReviewEntries = () => {
     });
   };
 
+  // Mutation pour supprimer le COA
+  const deleteCOAMutation = useMutation({
+    mutationFn: async ({ entryId, coaUrl, reason }: { entryId: string; coaUrl: string; reason?: string }) => {
+      // Supprimer le fichier du storage
+      const deleted = await deleteCOAFile(coaUrl);
+      if (!deleted) {
+        console.warn("Impossible de supprimer le fichier du storage, mais on continue...");
+      }
+
+      // Appeler la fonction SQL pour mettre à jour l'entrée
+      const { error } = await supabase.rpc("delete_entry_coa", {
+        p_entry_id: entryId,
+        p_reason: reason || null,
+      });
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["pending-coa-validation"] });
+      setIsDeleteDialogOpen(false);
+      setSelectedEntry(null);
+      toast.success("COA supprimé avec succès. L'entrée est revenue en brouillon.");
+    },
+    onError: (error: any) => {
+      toast.error(error.message || "Erreur lors de la suppression du COA");
+    },
+  });
+
+  // Fonction pour ouvrir le dialog de suppression
+  const handleDeleteCOA = (entry: PendingEntry) => {
+    if (!entry.coa_url) {
+      toast.error("Aucun COA à supprimer");
+      return;
+    }
+    setSelectedEntry(entry);
+    setIsDeleteDialogOpen(true);
+  };
+
+  // Fonction pour confirmer la suppression
+  const confirmDeleteCOA = () => {
+    if (!selectedEntry || !selectedEntry.coa_url) return;
+    
+    deleteCOAMutation.mutate({
+      entryId: selectedEntry.id,
+      coaUrl: selectedEntry.coa_url,
+      reason: "COA supprimé par l'organisateur",
+    });
+  };
+
+  // Fonction pour ouvrir le dialog d'email
+  const handleSendEmail = (entry: PendingEntry) => {
+    setSelectedEntry(entry);
+    // Message par défaut favorisant les images
+    setEmailMessage(`Bonjour ${entry.producer_name},
+
+Votre Certificat d'Analyse (COA) pour l'entrée "${entry.strain_name}" nécessite une correction.
+
+🔍 **Problème identifié :**
+Le document actuel ne peut pas être validé. Nous vous demandons de le remplacer.
+
+📸 **Recommandation importante :**
+Nous favorisons l'envoi d'une **image** (JPG, PNG, WEBP) plutôt qu'un PDF pour faciliter la validation. Une photo claire de votre COA est préférable.
+
+✅ **Ce que votre COA doit contenir :**
+- Taux THC (section "Cannabinoids" ou "THC Total")
+- Taux CBD (section "Cannabinoids" ou "CBD")
+- Profil terpénique (section "Terpenes" ou "Terpènes")
+- Nom du laboratoire et date d'analyse
+
+📝 **Prochaines étapes :**
+1. Connectez-vous à votre compte producteur
+2. Allez dans "Mes entrées" → Modifier l'entrée "${entry.strain_name}"
+3. Uploadez une nouvelle image de votre COA (JPG, PNG ou WEBP de préférence)
+4. Vérifiez que toutes les informations sont correctement saisies
+5. Soumettez à nouveau votre entrée
+
+Si vous avez des questions, n'hésitez pas à nous contacter.
+
+Cordialement,
+L'équipe CBD Flower Cup`);
+    setIsEmailDialogOpen(true);
+  };
+
+  // Fonction pour envoyer l'email
+  const sendEmailToProducer = async () => {
+    if (!selectedEntry || !emailMessage.trim()) {
+      toast.error("Veuillez saisir un message");
+      return;
+    }
+
+    setSendingEmail(true);
+    try {
+      // Récupérer l'email du producteur via la fonction RPC
+      const { data: producerEmail, error: emailError } = await supabase.rpc("get_user_email", {
+        p_user_id: selectedEntry.producer_id,
+      });
+
+      if (emailError || !producerEmail) {
+        throw new Error("Email du producteur non trouvé");
+      }
+
+      // Récupérer les infos de l'entrée pour le template email
+      const subject = `Action requise : Correction du COA pour "${selectedEntry.strain_name}"`;
+      
+      // Template HTML de l'email
+      const htmlTemplate = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+    .header { background-color: #10b981; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
+    .content { background-color: #f9fafb; padding: 30px; border: 1px solid #e5e7eb; }
+    .highlight { background-color: #fef3c7; padding: 15px; border-left: 4px solid #f59e0b; margin: 20px 0; }
+    .steps { background-color: white; padding: 20px; border-radius: 8px; margin: 20px 0; }
+    .step { margin: 10px 0; padding-left: 25px; }
+    .footer { text-align: center; padding: 20px; color: #6b7280; font-size: 12px; }
+    .button { display: inline-block; background-color: #10b981; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 20px 0; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🌿 CBD Flower Cup</h1>
+    </div>
+    <div class="content">
+      <p>Bonjour <strong>${selectedEntry.producer_name}</strong>,</p>
+      
+      <p>Votre Certificat d'Analyse (COA) pour l'entrée <strong>"${selectedEntry.strain_name}"</strong> du concours <strong>"${selectedEntry.contest_name}"</strong> nécessite une correction.</p>
+      
+      <div class="highlight">
+        <strong>📸 Recommandation importante :</strong><br>
+        Nous favorisons l'envoi d'une <strong>image</strong> (JPG, PNG, WEBP) plutôt qu'un PDF pour faciliter la validation. Une photo claire de votre COA est préférable.
+      </div>
+      
+      <h3>✅ Ce que votre COA doit contenir :</h3>
+      <ul>
+        <li>Taux THC (section "Cannabinoids" ou "THC Total")</li>
+        <li>Taux CBD (section "Cannabinoids" ou "CBD")</li>
+        <li>Profil terpénique (section "Terpenes" ou "Terpènes")</li>
+        <li>Nom du laboratoire et date d'analyse</li>
+      </ul>
+      
+      <div class="steps">
+        <h3>📝 Prochaines étapes :</h3>
+        <div class="step">1. Connectez-vous à votre compte producteur</div>
+        <div class="step">2. Allez dans "Mes entrées" → Modifier l'entrée "${selectedEntry.strain_name}"</div>
+        <div class="step">3. Uploadez une nouvelle <strong>image</strong> de votre COA (JPG, PNG ou WEBP de préférence)</div>
+        <div class="step">4. Vérifiez que toutes les informations sont correctement saisies</div>
+        <div class="step">5. Soumettez à nouveau votre entrée</div>
+      </div>
+      
+      ${emailMessage.includes('Problème identifié') ? `
+      <div class="highlight">
+        <strong>🔍 Problème identifié :</strong><br>
+        ${emailMessage.split('Problème identifié :')[1]?.split('**Recommandation**')[0] || 'Le document actuel ne peut pas être validé.'}
+      </div>
+      ` : ''}
+      
+      <div style="white-space: pre-line; margin: 20px 0;">${emailMessage.replace(/\n/g, '<br>')}</div>
+      
+      <p>Si vous avez des questions, n'hésitez pas à nous contacter.</p>
+      
+      <p>Cordialement,<br>L'équipe CBD Flower Cup</p>
+    </div>
+    <div class="footer">
+      <p>Cet email a été envoyé automatiquement. Merci de ne pas y répondre directement.</p>
+    </div>
+  </div>
+</body>
+</html>`;
+
+      // Appeler la fonction SQL pour créer la notification
+      await supabase.rpc("send_coa_rejection_email", {
+        p_entry_id: selectedEntry.id,
+        p_subject: subject,
+        p_message: emailMessage,
+      });
+
+      // Envoyer l'email via l'Edge Function
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Non authentifié");
+
+      const { error: emailSendError } = await supabase.functions.invoke("send-email", {
+        body: {
+          to: producerEmail,
+          subject: subject,
+          html: htmlTemplate,
+          type: "coa_rejected",
+          userId: selectedEntry.producer_id,
+        },
+      });
+
+      if (emailSendError) {
+        // Même si l'email échoue, la notification a été créée
+        console.error("Error sending email:", emailSendError);
+        toast.success("Notification créée pour le producteur. L'envoi d'email a échoué, mais le message est disponible dans les notifications.");
+      } else {
+        toast.success("Email envoyé avec succès au producteur");
+      }
+
+      setIsEmailDialogOpen(false);
+      setEmailMessage("");
+    } catch (error: any) {
+      console.error("Error sending email:", error);
+      toast.error(error.message || "Erreur lors de l'envoi de l'email");
+    } finally {
+      setSendingEmail(false);
+    }
+  };
+
   const { paginatedData, currentPage, totalPages, goToPage } = usePagination({
     data: pendingEntries || [],
     itemsPerPage: 10,
@@ -256,14 +480,34 @@ const ReviewEntries = () => {
                               </p>
                             </div>
                           </div>
-                          <div className="flex gap-2">
+                          <div className="flex gap-2 flex-wrap">
                             {entry.coa_url && (
-                              <COAViewer
-                                entryId={entry.id}
-                                coaUrl={entry.coa_url}
-                                variant="button"
-                                entryName={entry.strain_name}
-                              />
+                              <>
+                                <COAViewer
+                                  entryId={entry.id}
+                                  coaUrl={entry.coa_url}
+                                  variant="button"
+                                  entryName={entry.strain_name}
+                                />
+                                <Button
+                                  variant="destructive"
+                                  size="sm"
+                                  onClick={() => handleDeleteCOA(entry)}
+                                  title="Supprimer le COA et notifier le producteur"
+                                >
+                                  <Trash2 className="mr-2 h-4 w-4" />
+                                  Supprimer COA
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleSendEmail(entry)}
+                                  title="Envoyer un email au producteur"
+                                >
+                                  <Mail className="mr-2 h-4 w-4" />
+                                  Envoyer Email
+                                </Button>
+                              </>
                             )}
                             <Button
                               variant="default"
@@ -483,6 +727,109 @@ const ReviewEntries = () => {
             >
               <CheckCircle2 className="mr-2 h-4 w-4" />
               Approuver
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog de confirmation de suppression COA */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Supprimer le COA ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Vous êtes sur le point de supprimer le Certificat d'Analyse pour l'entrée <strong>{selectedEntry?.strain_name}</strong>.
+              <br /><br />
+              Cette action va :
+              <ul className="list-disc list-inside mt-2 space-y-1">
+                <li>Supprimer le fichier COA du storage</li>
+                <li>Remettre l'entrée en statut "brouillon"</li>
+                <li>Réinitialiser la validation COA</li>
+                <li>Permettre au producteur de soumettre un nouveau COA</li>
+              </ul>
+              <br />
+              <strong className="text-destructive">Cette action est irréversible.</strong>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteCOAMutation.isPending}>Annuler</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDeleteCOA}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={deleteCOAMutation.isPending}
+            >
+              {deleteCOAMutation.isPending ? "Suppression..." : "Supprimer le COA"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Dialog pour envoyer un email au producteur */}
+      <Dialog open={isEmailDialogOpen} onOpenChange={setIsEmailDialogOpen}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Envoyer un email au producteur</DialogTitle>
+            <DialogDescription>
+              Envoyez un email à <strong>{selectedEntry?.producer_name}</strong> concernant son COA pour l'entrée <strong>"{selectedEntry?.strain_name}"</strong>.
+              <br />
+              Le message inclut automatiquement des instructions favorisant l'upload d'images.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="rounded-lg bg-muted/50 p-4 space-y-2">
+              <div className="flex items-center gap-2 text-sm font-medium">
+                <ImageIcon className="h-4 w-4 text-primary" />
+                <span>Recommandation automatique incluse</span>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                L'email contient automatiquement une section recommandant l'upload d'une <strong>image</strong> (JPG, PNG, WEBP) plutôt qu'un PDF pour faciliter la validation.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="email-message">Message personnalisé</Label>
+              <Textarea
+                id="email-message"
+                placeholder="Ajoutez votre message personnalisé ici..."
+                value={emailMessage}
+                onChange={(e) => setEmailMessage(e.target.value)}
+                rows={12}
+                className="font-mono text-sm"
+              />
+              <p className="text-xs text-muted-foreground">
+                Le message par défaut inclut déjà les instructions de base. Vous pouvez le personnaliser selon vos besoins.
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsEmailDialogOpen(false);
+                setEmailMessage("");
+              }}
+              disabled={sendingEmail}
+            >
+              Annuler
+            </Button>
+            <Button
+              variant="default"
+              onClick={sendEmailToProducer}
+              disabled={sendingEmail || !emailMessage.trim()}
+            >
+              {sendingEmail ? (
+                <>
+                  <Mail className="mr-2 h-4 w-4 animate-pulse" />
+                  Envoi en cours...
+                </>
+              ) : (
+                <>
+                  <Mail className="mr-2 h-4 w-4" />
+                  Envoyer l'email
+                </>
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

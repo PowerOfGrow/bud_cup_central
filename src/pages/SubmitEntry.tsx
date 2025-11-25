@@ -626,7 +626,10 @@ const SubmitEntry = () => {
                               <li>Profil terpénique (section "Terpenes" ou "Terpènes")</li>
                               <li>Nom du laboratoire et date d'analyse</li>
                             </ul>
-                            <p className="text-muted-foreground mt-2">Formats acceptés : PDF, JPG, PNG, WEBP (max 10 MB)</p>
+                            <p className="text-muted-foreground mt-2">
+                              <strong>Formats acceptés :</strong> JPG, PNG, WEBP (recommandé) ou PDF (max 10 MB)<br />
+                              <span className="text-xs">💡 <strong>Astuce :</strong> Les images sont préférées pour une validation plus rapide !</span>
+                            </p>
                           </div>
                         </div>
                       </div>
