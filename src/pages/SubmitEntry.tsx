@@ -41,9 +41,9 @@ const entrySchema = z.object({
   contest_id: z.string().uuid("Sélectionnez un concours"),
   strain_name: z.string().min(2, "Le nom de la variété doit contenir au moins 2 caractères"),
   cultivar: z.string().optional(),
-  category: z.enum(["indica", "sativa", "hybrid", "outdoor", "hash", "other"], {
-    required_error: "Sélectionnez une catégorie",
-  }),
+  // Accepte soit une catégorie custom (contest_category_id) soit une catégorie globale (category enum)
+  contest_category_id: z.string().uuid().optional().or(z.literal("")),
+  category: z.enum(["indica", "sativa", "hybrid", "outdoor", "hash", "other"]).optional(),
   thc_percent: z.coerce
     .number()
     .min(0, "Le taux THC doit être positif")
@@ -54,7 +54,16 @@ const entrySchema = z.object({
   terpene_profile: z.string().optional(),
   batch_code: z.string().optional(),
   submission_notes: z.string().optional(),
-});
+}).refine(
+  (data) => {
+    // Au moins une catégorie doit être sélectionnée (soit custom soit globale)
+    return (data.contest_category_id && data.contest_category_id !== "") || data.category;
+  },
+  {
+    message: "Sélectionnez une catégorie",
+    path: ["category"],
+  }
+);
 
 type EntryFormValues = z.infer<typeof entrySchema>;
 
@@ -107,6 +116,7 @@ const SubmitEntry = () => {
       contest_id: contestId || "",
       strain_name: "",
       cultivar: "",
+      contest_category_id: "",
       category: "hybrid",
       thc_percent: undefined,
       cbd_percent: undefined,
@@ -116,7 +126,7 @@ const SubmitEntry = () => {
     },
   });
 
-  // Récupérer la limite THC du concours sélectionné
+  // Récupérer la limite THC du concours sélectionné et les catégories disponibles
   const { data: selectedContest } = useQuery({
     queryKey: ["contest", selectedContestId, "thc-limit"],
     queryFn: async () => {
@@ -129,6 +139,26 @@ const SubmitEntry = () => {
 
       if (error) throw error;
       return data;
+    },
+    enabled: !!selectedContestId,
+  });
+
+  // Récupérer les catégories disponibles pour le concours sélectionné (custom ou globales)
+  const { data: availableCategories, isLoading: categoriesLoading } = useQuery({
+    queryKey: ["available-categories", selectedContestId],
+    queryFn: async () => {
+      if (!selectedContestId) return [];
+      
+      // Utiliser la vue qui combine custom + globales
+      const { data, error } = await supabase
+        .from("available_categories_for_contest")
+        .select("*")
+        .eq("contest_id", selectedContestId)
+        .order("display_order", { ascending: true })
+        .order("name", { ascending: true });
+
+      if (error) throw error;
+      return data || [];
     },
     enabled: !!selectedContestId,
   });
@@ -151,7 +181,8 @@ const SubmitEntry = () => {
         contest_id: existingEntry.contest_id,
         strain_name: existingEntry.strain_name,
         cultivar: existingEntry.cultivar || "",
-        category: existingEntry.category,
+        contest_category_id: existingEntry.contest_category_id || "",
+        category: existingEntry.contest_category_id ? undefined : existingEntry.category,
         thc_percent: existingEntry.thc_percent ?? undefined,
         cbd_percent: existingEntry.cbd_percent ?? undefined,
         terpene_profile: existingEntry.terpene_profile || "",
@@ -203,13 +234,15 @@ const SubmitEntry = () => {
         }
       }
 
+      // Déterminer si on utilise une catégorie custom ou globale
+      const isCustomCategory = data.contest_category_id && data.contest_category_id !== "";
+      
       // Données de l'entrée
-      const entryData = {
+      const entryData: any = {
         contest_id: data.contest_id,
         producer_id: user.id,
         strain_name: data.strain_name,
         cultivar: data.cultivar || null,
-        category: data.category,
         thc_percent: data.thc_percent || null,
         cbd_percent: data.cbd_percent || null,
         terpene_profile: data.terpene_profile || null,
@@ -218,6 +251,15 @@ const SubmitEntry = () => {
         photo_url: photoUrl,
         submission_notes: data.submission_notes || null,
       };
+
+      // Si catégorie custom, utiliser contest_category_id, sinon utiliser category (enum global)
+      if (isCustomCategory) {
+        entryData.contest_category_id = data.contest_category_id;
+        entryData.category = "other"; // Valeur par défaut pour rétrocompatibilité
+      } else {
+        entryData.contest_category_id = null;
+        entryData.category = data.category || "hybrid";
+      }
 
       if (editEntryId && existingEntry) {
         // Mise à jour d'une entrée existante
@@ -404,25 +446,63 @@ const SubmitEntry = () => {
 
                   <FormField
                     control={form.control}
-                    name="category"
+                    name={availableCategories && availableCategories.some(c => c.category_type === 'custom') ? "contest_category_id" : "category"}
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Catégorie *</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <Select 
+                          onValueChange={(value) => {
+                            if (availableCategories && availableCategories.some(c => c.category_type === 'custom')) {
+                              // Catégories custom : value est l'ID de la catégorie
+                              form.setValue("contest_category_id", value);
+                              form.setValue("category", undefined);
+                            } else {
+                              // Catégories globales : value est le slug de l'enum
+                              form.setValue("category", value as any);
+                              form.setValue("contest_category_id", "");
+                            }
+                            field.onChange(value);
+                          }}
+                          value={field.value || (availableCategories?.[0]?.category_type === 'custom' ? availableCategories[0].category_id : availableCategories?.[0]?.slug) || ""}
+                        >
                           <FormControl>
-                            <SelectTrigger>
-                              <SelectValue />
+                            <SelectTrigger disabled={categoriesLoading || !selectedContestId}>
+                              <SelectValue placeholder={categoriesLoading ? "Chargement..." : "Sélectionnez une catégorie"} />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="indica">Indica</SelectItem>
-                            <SelectItem value="sativa">Sativa</SelectItem>
-                            <SelectItem value="hybrid">Hybrid</SelectItem>
-                            <SelectItem value="outdoor">Outdoor</SelectItem>
-                            <SelectItem value="hash">Hash</SelectItem>
-                            <SelectItem value="other">Autre</SelectItem>
+                            {availableCategories && availableCategories.length > 0 ? (
+                              availableCategories.map((cat) => (
+                                <SelectItem 
+                                  key={cat.category_id || cat.slug} 
+                                  value={cat.category_id || cat.slug || ""}
+                                >
+                                  {cat.name}
+                                  {cat.description && (
+                                    <span className="text-xs text-muted-foreground ml-2">
+                                      - {cat.description}
+                                    </span>
+                                  )}
+                                </SelectItem>
+                              ))
+                            ) : (
+                              // Fallback : catégories globales par défaut
+                              <>
+                                <SelectItem value="indica">Indica</SelectItem>
+                                <SelectItem value="sativa">Sativa</SelectItem>
+                                <SelectItem value="hybrid">Hybrid</SelectItem>
+                                <SelectItem value="outdoor">Outdoor</SelectItem>
+                                <SelectItem value="hash">Hash</SelectItem>
+                                <SelectItem value="other">Autre</SelectItem>
+                              </>
+                            )}
                           </SelectContent>
                         </Select>
+                        <FormDescription>
+                          {availableCategories && availableCategories.some(c => c.category_type === 'custom') 
+                            ? "Catégories personnalisées définies pour ce concours"
+                            : "Catégories standard disponibles"}
+                        </FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
