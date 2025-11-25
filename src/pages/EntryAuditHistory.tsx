@@ -1,6 +1,6 @@
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, FileText, User, Clock, Shield, AlertCircle, Edit, CheckCircle2, XCircle } from "lucide-react";
+import { ArrowLeft, FileText, User, Clock, Shield, AlertCircle, Edit, CheckCircle2, XCircle, Trash2 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -46,6 +46,8 @@ const getActionIcon = (action: string) => {
       return <CheckCircle2 className="h-4 w-4 text-green-500" />;
     case "coa_rejected":
       return <XCircle className="h-4 w-4 text-red-500" />;
+    case "coa_deleted":
+      return <Trash2 className="h-4 w-4 text-red-600" />;
     default:
       return <Edit className="h-4 w-4 text-gray-500" />;
   }
@@ -60,6 +62,7 @@ const getActionLabel = (action: string) => {
     coa_modified: "Modification COA",
     coa_validated: "Validation COA",
     coa_rejected: "Rejet COA",
+    coa_deleted: "Suppression COA",
     score_modified: "Modification de score",
     deleted: "Suppression",
   };
