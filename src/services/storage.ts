@@ -106,11 +106,34 @@ export async function getCOASignedUrl(
  */
 export function extractFilePathFromUrl(url: string): string | null {
   try {
-    // Format Supabase Storage URL : https://[project].supabase.co/storage/v1/object/public/[bucket]/[path]
-    // ou : https://[project].supabase.co/storage/v1/object/sign/[bucket]/[path]?...
-    const match = url.match(/\/storage\/v1\/object\/(?:public|sign)\/[^/]+\/(.+?)(?:\?|$)/);
-    return match ? match[1] : null;
-  } catch {
+    // Formats possibles :
+    // 1. https://[project].supabase.co/storage/v1/object/public/[bucket]/[path]
+    // 2. https://[project].supabase.co/storage/v1/object/sign/[bucket]/[path]?token=...
+    // 3. https://[project].supabase.co/storage/v1/object/[bucket]/[path]?...
+    
+    // Décoder l'URL au cas où elle serait encodée
+    const decodedUrl = decodeURIComponent(url);
+    
+    // Pattern pour extraire le chemin après le nom du bucket
+    const patterns = [
+      /\/storage\/v1\/object\/(?:public|sign)\/[^/]+\/(.+?)(?:\?|$)/,
+      /\/storage\/v1\/object\/[^/]+\/(.+?)(?:\?|$)/,
+      // Pattern pour URLs qui ont déjà le chemin directement
+      /\/entry-documents\/(.+?)(?:\?|$)/
+    ];
+    
+    for (const pattern of patterns) {
+      const match = decodedUrl.match(pattern);
+      if (match && match[1]) {
+        // Décoder le chemin au cas où il contiendrait des caractères encodés
+        return decodeURIComponent(match[1]);
+      }
+    }
+    
+    console.error("Impossible d'extraire le chemin du fichier. URL:", url);
+    return null;
+  } catch (error) {
+    console.error("Error extracting file path from URL:", error, "URL:", url);
     return null;
   }
 }
@@ -131,19 +154,43 @@ export async function deleteCOAFile(coaUrl: string): Promise<boolean> {
   try {
     const filePath = extractFilePathFromUrl(coaUrl);
     if (!filePath) {
-      console.error("Impossible d'extraire le chemin du fichier depuis l'URL");
+      console.error("Impossible d'extraire le chemin du fichier depuis l'URL:", coaUrl);
       return false;
     }
 
-    const { error } = await supabase.storage
+    console.log("Attempting to delete COA file from path:", filePath);
+    
+    // Vérifier que l'utilisateur est authentifié et a les permissions
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      console.error("User not authenticated when trying to delete COA file");
+      return false;
+    }
+
+    // Vérifier que l'utilisateur est organisateur
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+
+    if (!profile || profile.role !== "organizer") {
+      console.error("User is not an organizer, cannot delete COA file");
+      return false;
+    }
+
+    const { data, error } = await supabase.storage
       .from("entry-documents")
       .remove([filePath]);
 
     if (error) {
-      console.error("Error deleting COA file:", error);
+      console.error("Error deleting COA file from storage:", error);
+      console.error("File path attempted:", filePath);
+      console.error("Original URL:", coaUrl);
       return false;
     }
 
+    console.log("COA file deleted successfully:", filePath);
     return true;
   } catch (error) {
     console.error("Error in deleteCOAFile:", error);

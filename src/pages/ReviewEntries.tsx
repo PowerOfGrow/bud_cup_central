@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, CheckCircle2, XCircle, FileText, Eye, AlertCircle, Shield, Trash2, Mail, Image as ImageIcon } from "lucide-react";
+import { ArrowLeft, CheckCircle2, XCircle, FileText, Eye, AlertCircle, Shield, Trash2, Mail, Image as ImageIcon, Download } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -16,7 +16,7 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { COAViewer } from "@/components/COAViewer";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { deleteCOAFile, extractFilePathFromUrl } from "@/services/storage";
+import { deleteCOAFile, extractFilePathFromUrl, getCOASignedUrl } from "@/services/storage";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -167,19 +167,28 @@ const ReviewEntries = () => {
   // Mutation pour supprimer le COA
   const deleteCOAMutation = useMutation({
     mutationFn: async ({ entryId, coaUrl, reason }: { entryId: string; coaUrl: string; reason?: string }) => {
-      // Supprimer le fichier du storage
-      const deleted = await deleteCOAFile(coaUrl);
-      if (!deleted) {
-        console.warn("Impossible de supprimer le fichier du storage, mais on continue...");
-      }
-
-      // Appeler la fonction SQL pour mettre à jour l'entrée
-      const { error } = await supabase.rpc("delete_entry_coa", {
+      // D'abord, appeler la fonction SQL pour mettre à jour l'entrée
+      const { error: rpcError } = await supabase.rpc("delete_entry_coa", {
         p_entry_id: entryId,
         p_reason: reason || null,
       });
 
-      if (error) throw error;
+      if (rpcError) {
+        console.error("Error in delete_entry_coa RPC:", rpcError);
+        throw new Error(rpcError.message || "Erreur lors de la suppression dans la base de données");
+      }
+
+      // Ensuite, supprimer le fichier du storage (on continue même si ça échoue)
+      try {
+        const deleted = await deleteCOAFile(coaUrl);
+        if (!deleted) {
+          console.warn("Impossible de supprimer le fichier du storage, mais l'entrée a été mise à jour");
+          // On ne throw pas d'erreur car la base de données a été mise à jour
+        }
+      } catch (storageError) {
+        console.error("Error deleting COA file from storage:", storageError);
+        // On ne throw pas d'erreur car la base de données a été mise à jour
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["pending-coa-validation"] });
@@ -188,6 +197,7 @@ const ReviewEntries = () => {
       toast.success("COA supprimé avec succès. L'entrée est revenue en brouillon.");
     },
     onError: (error: any) => {
+      console.error("Error deleting COA:", error);
       toast.error(error.message || "Erreur lors de la suppression du COA");
     },
   });
@@ -211,6 +221,75 @@ const ReviewEntries = () => {
       coaUrl: selectedEntry.coa_url,
       reason: "COA supprimé par l'organisateur",
     });
+  };
+
+  // Fonction pour télécharger directement le COA
+  const handleDownloadCOA = async (entry: PendingEntry) => {
+    if (!entry.coa_url) {
+      toast.error("Aucun COA à télécharger");
+      return;
+    }
+
+    try {
+      const filePath = extractFilePathFromUrl(entry.coa_url);
+      if (!filePath) {
+        toast.error("Impossible d'extraire le chemin du fichier");
+        return;
+      }
+
+      const signedUrl = await getCOASignedUrl(entry.id, filePath, 3600);
+      if (!signedUrl) {
+        toast.error("Impossible de générer l'URL de téléchargement");
+        return;
+      }
+
+      // Télécharger le fichier
+      const response = await fetch(signedUrl, {
+        method: 'GET',
+        headers: {
+          'Accept': '*/*',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Erreur HTTP: ${response.status}`);
+      }
+
+      // Récupérer le type MIME
+      const contentType = response.headers.get('Content-Type') || 
+        (entry.coa_url.toLowerCase().includes('.pdf') ? 'application/pdf' :
+         entry.coa_url.toLowerCase().includes('.jpg') || entry.coa_url.toLowerCase().includes('.jpeg') ? 'image/jpeg' :
+         entry.coa_url.toLowerCase().includes('.png') ? 'image/png' :
+         entry.coa_url.toLowerCase().includes('.webp') ? 'image/webp' :
+         'application/octet-stream');
+
+      const blob = await response.blob();
+      const typedBlob = new Blob([blob], { type: contentType });
+      
+      const url = window.URL.createObjectURL(typedBlob);
+      const a = document.createElement("a");
+      a.href = url;
+      
+      // Générer un nom de fichier informatif
+      const extension = entry.coa_url.match(/\.([a-z0-9]+)(?:\?|$)/i)?.[1] || 'pdf';
+      const sanitizedName = entry.strain_name.replace(/[^a-z0-9]/gi, "_").toLowerCase();
+      const timestamp = new Date().toISOString().split("T")[0];
+      a.download = `COA_${sanitizedName}_${timestamp}.${extension}`;
+      a.type = contentType;
+      
+      document.body.appendChild(a);
+      a.click();
+      
+      setTimeout(() => {
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      }, 100);
+      
+      toast.success("COA téléchargé avec succès");
+    } catch (error: any) {
+      console.error("Error downloading COA:", error);
+      toast.error(error.message || "Erreur lors du téléchargement du COA");
+    }
   };
 
   // Fonction pour ouvrir le dialog d'email
@@ -494,13 +573,23 @@ L'équipe CBD Flower Cup`);
                                   entryName={entry.strain_name}
                                 />
                                 <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleDownloadCOA(entry)}
+                                  title="Télécharger le COA"
+                                >
+                                  <Download className="mr-2 h-4 w-4" />
+                                  Télécharger COA
+                                </Button>
+                                <Button
                                   variant="destructive"
                                   size="sm"
                                   onClick={() => handleDeleteCOA(entry)}
                                   title="Supprimer le COA et notifier le producteur"
+                                  disabled={deleteCOAMutation.isPending}
                                 >
                                   <Trash2 className="mr-2 h-4 w-4" />
-                                  Supprimer COA
+                                  {deleteCOAMutation.isPending ? "Suppression..." : "Supprimer COA"}
                                 </Button>
                                 <Button
                                   variant="outline"
