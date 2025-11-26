@@ -19,29 +19,14 @@ returns table (
 )
 language plpgsql
 security definer
-set search_path = public
+set search_path = public, auth
 as $$
-declare
-  v_current_user_id uuid;
-  v_current_user_role profile_role;
 begin
-  -- Récupérer l'utilisateur actuel
-  v_current_user_id := auth.uid();
-  
-  if v_current_user_id is null then
-    raise exception 'Vous devez être authentifié pour accéder à cette fonction';
-  end if;
-  
-  -- Vérifier que l'utilisateur est organisateur
-  select role into v_current_user_role
-  from public.profiles
-  where id = v_current_user_id;
-  
-  if v_current_user_role is null then
-    raise exception 'Profil utilisateur introuvable';
-  end if;
-  
-  if v_current_user_role != 'organizer' then
+  -- Vérifier que l'utilisateur est organisateur (méthode simplifiée)
+  if not exists (
+    select 1 from public.profiles
+    where id = auth.uid() and role = 'organizer'
+  ) then
     raise exception 'Seuls les organisateurs peuvent accéder à cette fonction';
   end if;
   
