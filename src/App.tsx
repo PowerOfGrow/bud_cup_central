@@ -38,6 +38,7 @@ const JudgeBiasAnalysisPage = lazy(() => import("./pages/JudgeBiasAnalysis"));
 const ModerateCommentsPage = lazy(() => import("./pages/ModerateComments"));
 const AuthCallback = lazy(() => import("./pages/AuthCallback"));
 const AdminPage = lazy(() => import("./pages/Admin"));
+const ManageGuidesPage = lazy(() => import("./pages/ManageGuides"));
 
 // Loading component
 const PageLoader = () => (
@@ -162,6 +163,14 @@ const App = () => (
             element={
               <ProtectedRoute requiredRole="organizer">
                 <AdminPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/manage-guides"
+            element={
+              <ProtectedRoute requiredRole="organizer">
+                <ManageGuidesPage />
               </ProtectedRoute>
             }
           />

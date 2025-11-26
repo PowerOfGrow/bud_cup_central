@@ -923,6 +923,13 @@ const OrganizerPanel = () => {
               </Link>
             </Button>
             <Button variant="outline" className="h-auto flex-col items-start justify-start p-4" asChild>
+              <Link to="/manage-guides">
+                <FileText className="h-5 w-5 mb-2" />
+                <span className="font-semibold">Gérer les guides</span>
+                <span className="text-xs text-muted-foreground mt-1">Guides PDF par catégorie</span>
+              </Link>
+            </Button>
+            <Button variant="outline" className="h-auto flex-col items-start justify-start p-4" asChild>
               <Link to="/review-entries">
                 <FileText className="h-5 w-5 mb-2" />
                 <span className="font-semibold">Validation COA</span>

@@ -27,6 +27,7 @@ import { useRealtimeEntries } from "@/hooks/use-realtime-results";
 import { CategoryBadge } from "@/components/CategoryBadge";
 import { QRCodeDisplay } from "@/components/QRCodeDisplay";
 import { SocialShare } from "@/components/SocialShare";
+import { useGuideByCategory, getGuideDownloadUrl } from "@/hooks/use-guides";
 import { toast } from "sonner";
 
 const statusLabel: Record<string, string> = {
@@ -192,6 +193,9 @@ const Contests = () => {
     isLoading: isLoadingEntries,
     error: entriesError,
   } = useContestEntries(selectedContestId ?? undefined);
+
+  // Récupérer le guide producteur actif
+  const { data: producerGuide } = useGuideByCategory("producer");
 
   // Charger les catégories disponibles pour le concours sélectionné (custom ou globales)
   const { data: availableCategories } = useQuery({
@@ -416,34 +420,56 @@ const Contests = () => {
                 className="self-start md:self-auto"
                 onClick={async () => {
                   try {
-                    const guideUrl = 'https://www.gardeauarbres.fr/docs_cbd/guide_producteurs.pdf';
-                    
-                    // Télécharger le PDF depuis l'URL externe
-                    const response = await fetch(guideUrl);
-                    
-                    if (!response.ok) {
-                      throw new Error(`Erreur HTTP: ${response.status}`);
+                    // Utiliser le guide depuis la base de données si disponible
+                    if (producerGuide) {
+                      const url = await getGuideDownloadUrl(producerGuide);
+                      if (!url) {
+                        throw new Error("Impossible de générer l'URL de téléchargement");
+                      }
+
+                      const response = await fetch(url);
+                      if (!response.ok) {
+                        throw new Error(`Erreur HTTP: ${response.status}`);
+                      }
+
+                      const blob = await response.blob();
+                      const downloadUrl = URL.createObjectURL(blob);
+                      const a = document.createElement('a');
+                      a.href = downloadUrl;
+                      a.download = producerGuide.file_name;
+                      document.body.appendChild(a);
+                      a.click();
+                      document.body.removeChild(a);
+                      URL.revokeObjectURL(downloadUrl);
+
+                      toast.success('Guide producteur téléchargé avec succès');
+                    } else {
+                      // Fallback vers l'URL externe si aucun guide n'est uploadé
+                      const guideUrl = 'https://www.gardeauarbres.fr/docs_cbd/guide_producteurs.pdf';
+                      const response = await fetch(guideUrl);
+                      
+                      if (!response.ok) {
+                        throw new Error(`Erreur HTTP: ${response.status}`);
+                      }
+
+                      const blob = await response.blob();
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement('a');
+                      a.href = url;
+                      a.download = `guide-producteur-${selectedContest.name.replace(/[^a-z0-9]/gi, '_')}.pdf`;
+                      document.body.appendChild(a);
+                      a.click();
+                      document.body.removeChild(a);
+                      URL.revokeObjectURL(url);
+
+                      toast.success('Guide producteur téléchargé avec succès');
                     }
-
-                    // Créer un blob à partir de la réponse
-                    const blob = await response.blob();
-                    
-                    // Créer un lien de téléchargement
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = `guide-producteur-${selectedContest.name.replace(/[^a-z0-9]/gi, '_')}.pdf`;
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                    URL.revokeObjectURL(url);
-
-                    toast.success('Guide producteur téléchargé avec succès');
                   } catch (error) {
                     console.error('Erreur lors du téléchargement du guide:', error);
                     toast.error('Erreur lors du téléchargement du guide. Veuillez réessayer.');
                   }
                 }}
+                disabled={isLoadingGuide}
               >
                 Télécharger le guide producteur
               </Button>
