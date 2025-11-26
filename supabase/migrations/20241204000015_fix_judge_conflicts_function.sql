@@ -1,6 +1,10 @@
 -- Fix: Fonction SQL sécurisée pour les organisateurs pour récupérer les conflits de juges
 -- Évite les problèmes de RLS avec les jointures complexes sur profiles.email
 
+-- Supprimer la fonction existante (si elle existe)
+drop function if exists public.get_judge_conflicts_for_organizer();
+
+-- Recréer la fonction avec le bon type
 create or replace function public.get_judge_conflicts_for_organizer()
 returns table (
   id bigint,
