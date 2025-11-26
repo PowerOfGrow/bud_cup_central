@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useViewerDashboard, useProducerDashboard, useJudgeDashboard } from "@/hooks/use-dashboard";
-import { Award, CheckCircle2, Clock3, Eye, Leaf, Scale, Shield, Star, Users, BarChart3, Download, TrendingUp, FileText, Settings, Calendar, UserPlus, Trophy, ListChecks, LayoutDashboard, Plus, Search } from "lucide-react";
+import { Award, CheckCircle2, Clock3, Eye, Leaf, Scale, Shield, Star, Users, BarChart3, Download, TrendingUp, FileText, Settings, Calendar, UserPlus, Trophy, ListChecks, LayoutDashboard, Plus, Search, BookOpen } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { LoadingState } from "@/components/LoadingState";
 import { ErrorState } from "@/components/ErrorState";
@@ -24,7 +24,68 @@ import { AlertCircle } from "lucide-react";
 import { OnboardingWizard } from "@/components/OnboardingWizard";
 import { useOnboarding } from "@/hooks/use-onboarding";
 import { useState, useEffect, createContext, useContext } from "react";
+import { useGuideByCategory, getGuideDownloadUrl, type Guide } from "@/hooks/use-guides";
 // Lazy load des bibliothèques lourdes uniquement pour OrganizerPanel
+
+// Composant pour télécharger un guide
+const GuideDownloadButton = ({ category, label }: { category: Guide["category"]; label: string }) => {
+  const { data: guide } = useGuideByCategory(category);
+  const [downloading, setDownloading] = useState(false);
+
+  const handleDownload = async () => {
+    if (!guide) {
+      toast.error("Le guide n'est pas encore disponible. Contactez un organisateur pour plus d'informations.");
+      return;
+    }
+
+    setDownloading(true);
+    try {
+      const url = await getGuideDownloadUrl(guide);
+      if (!url) {
+        throw new Error("Impossible de générer l'URL de téléchargement");
+      }
+
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`Erreur HTTP: ${response.status}`);
+      }
+
+      const blob = await response.blob();
+      const downloadUrl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = downloadUrl;
+      a.download = guide.file_name;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(downloadUrl);
+
+      toast.success("Guide téléchargé avec succès");
+    } catch (error: any) {
+      console.error("Erreur lors du téléchargement du guide:", error);
+      toast.error(error.message || "Erreur lors du téléchargement du guide");
+    } finally {
+      setDownloading(false);
+    }
+  };
+
+  if (!guide) return null;
+
+  return (
+    <Button
+      variant="outline"
+      className="h-auto flex-col items-start justify-start p-4"
+      onClick={handleDownload}
+      disabled={downloading}
+    >
+      <BookOpen className="h-5 w-5 mb-2" />
+      <span className="font-semibold">{label}</span>
+      <span className="text-xs text-muted-foreground mt-1">
+        {downloading ? "Téléchargement..." : "Télécharger le guide PDF"}
+      </span>
+    </Button>
+  );
+};
 
 // Contexte pour partager la fonction de changement d'onglet
 const DashboardTabContext = createContext<{
@@ -141,6 +202,7 @@ const ViewerPanel = () => {
                 <span className="text-xs text-muted-foreground mt-1">Notifications</span>
               </Link>
             </Button>
+            <GuideDownloadButton category="viewer" label="Guide Utilisateur Gratuit" />
           </div>
         </CardContent>
       </Card>
@@ -476,6 +538,7 @@ const ProducerPanel = () => {
                 <span className="text-xs text-muted-foreground mt-1">Notifications</span>
               </Link>
             </Button>
+            <GuideDownloadButton category="producer" label="Guide Producteur" />
           </div>
         </CardContent>
       </Card>
@@ -548,6 +611,7 @@ const JudgePanel = () => {
                 <span className="text-xs text-muted-foreground mt-1">Notifications</span>
               </Link>
             </Button>
+            <GuideDownloadButton category="judge" label="Guide Juge" />
           </div>
         </CardContent>
       </Card>
@@ -978,6 +1042,7 @@ const OrganizerPanel = () => {
                 <span className="text-xs text-muted-foreground mt-1">Notifications</span>
               </Link>
             </Button>
+            <GuideDownloadButton category="organizer" label="Guide Organisateur" />
           </div>
         </CardContent>
       </Card>
