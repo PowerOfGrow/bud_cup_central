@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Award, CalendarDays, MapPin, Users, Scale, Search, X, Filter } from "lucide-react";
+import { Award, CalendarDays, MapPin, Users, Scale, Search, X, Filter, Download } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -195,7 +195,7 @@ const Contests = () => {
   } = useContestEntries(selectedContestId ?? undefined);
 
   // Récupérer le guide producteur actif
-  const { data: producerGuide } = useGuideByCategory("producer");
+  const { data: producerGuide, isLoading: isLoadingGuide } = useGuideByCategory("producer");
 
   // Charger les catégories disponibles pour le concours sélectionné (custom ou globales)
   const { data: availableCategories } = useQuery({
@@ -415,13 +415,12 @@ const Contests = () => {
                   {selectedContest.entriesCount} entrées validées — {selectedContest.judgesCount} jurés
                 </p>
               </div>
-              <Button 
-                variant="secondary" 
-                className="self-start md:self-auto"
-                onClick={async () => {
-                  try {
-                    // Utiliser le guide depuis la base de données si disponible
-                    if (producerGuide) {
+              {producerGuide ? (
+                <Button 
+                  variant="secondary" 
+                  className="self-start md:self-auto"
+                  onClick={async () => {
+                    try {
                       const url = await getGuideDownloadUrl(producerGuide);
                       if (!url) {
                         throw new Error("Impossible de générer l'URL de téléchargement");
@@ -443,36 +442,17 @@ const Contests = () => {
                       URL.revokeObjectURL(downloadUrl);
 
                       toast.success('Guide producteur téléchargé avec succès');
-                    } else {
-                      // Fallback vers l'URL externe si aucun guide n'est uploadé
-                      const guideUrl = 'https://www.gardeauarbres.fr/docs_cbd/guide_producteurs.pdf';
-                      const response = await fetch(guideUrl);
-                      
-                      if (!response.ok) {
-                        throw new Error(`Erreur HTTP: ${response.status}`);
-                      }
-
-                      const blob = await response.blob();
-                      const url = URL.createObjectURL(blob);
-                      const a = document.createElement('a');
-                      a.href = url;
-                      a.download = `guide-producteur-${selectedContest.name.replace(/[^a-z0-9]/gi, '_')}.pdf`;
-                      document.body.appendChild(a);
-                      a.click();
-                      document.body.removeChild(a);
-                      URL.revokeObjectURL(url);
-
-                      toast.success('Guide producteur téléchargé avec succès');
+                    } catch (error) {
+                      console.error('Erreur lors du téléchargement du guide:', error);
+                      toast.error('Erreur lors du téléchargement du guide. Veuillez réessayer.');
                     }
-                  } catch (error) {
-                    console.error('Erreur lors du téléchargement du guide:', error);
-                    toast.error('Erreur lors du téléchargement du guide. Veuillez réessayer.');
-                  }
-                }}
-                disabled={isLoadingGuide}
-              >
-                Télécharger le guide producteur
-              </Button>
+                  }}
+                  disabled={isLoadingGuide}
+                >
+                  <Download className="mr-2 h-4 w-4" />
+                  Télécharger le guide producteur
+                </Button>
+              ) : null}
             </div>
 
             {isLoadingEntries && <LoadingState message="Chargement des entrées…" />}
