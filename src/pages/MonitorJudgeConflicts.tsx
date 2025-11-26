@@ -16,54 +16,38 @@ import { Link } from "react-router-dom";
 const MonitorJudgeConflicts = () => {
   const navigate = useNavigate();
 
-  // Récupérer les conflits depuis la vue contest_judge_conflicts (si accessible) ou calculer manuellement
+  // Récupérer les conflits via une fonction SQL sécurisée
+  // Utilise une fonction RPC pour éviter les problèmes de RLS avec les jointures complexes
   const { data: conflicts, isLoading, error } = useQuery({
     queryKey: ["judge-conflicts"],
     queryFn: async () => {
-      // Méthode 1: Essayer d'utiliser directement la vue si accessible via RPC
-      // Méthode 2 (fallback): Récupérer les assignations et vérifier manuellement
+      const { data, error } = await supabase.rpc("get_judge_conflicts_for_organizer");
+
+      if (error) throw error;
       
-      const { data: assignments, error: assignmentsError } = await supabase
-        .from("contest_judges")
-        .select(`
-          *,
-          judge:profiles!contest_judges_judge_id_fkey(
-            id,
-            display_name,
-            email,
-            organization,
-            role
-          ),
-          contest:contests!contest_judges_contest_id_fkey(
-            id,
-            name,
-            status
-          )
-        `)
-        .order("created_at", { ascending: false });
-
-      if (assignmentsError) throw assignmentsError;
-
-      // Vérifier les conflits pour chaque assignation
-      const conflictsWithDetails = await Promise.all(
-        (assignments || []).map(async (assignment) => {
-          // Vérifier si le juge a des entrées dans ce concours
-          const { data: entries } = await supabase
-            .from("entries")
-            .select("id, strain_name")
-            .eq("contest_id", assignment.contest_id)
-            .eq("producer_id", assignment.judge_id);
-
-          return {
-            ...assignment,
-            hasEntries: (entries?.length || 0) > 0,
-            entriesCount: entries?.length || 0,
-            entries: entries || [],
-          };
-        })
-      );
-
-      return conflictsWithDetails.filter(c => c.hasEntries);
+      // Transformer les données pour correspondre au format attendu par le reste du code
+      return (data || []).map((conflict: any) => ({
+        ...conflict,
+        judge_id: conflict.judge_id,
+        contest_id: conflict.contest_id,
+        judge: {
+          id: conflict.judge_id,
+          display_name: conflict.judge_display_name,
+          organization: conflict.judge_organization,
+          role: conflict.judge_role,
+        },
+        contest: {
+          id: conflict.contest_id,
+          name: conflict.contest_name,
+          status: conflict.contest_status,
+        },
+        hasEntries: conflict.has_entries,
+        entriesCount: conflict.entries_count,
+        entries: (conflict.entry_names || []).map((strainName: string, index: number) => ({
+          id: `entry-${conflict.judge_id}-${index}`, // ID temporaire pour l'affichage
+          strain_name: strainName,
+        })),
+      }));
     },
   });
 
@@ -201,7 +185,7 @@ const MonitorJudgeConflicts = () => {
                                   Conflit d'Intérêt
                                 </Badge>
                                 <span className="font-semibold text-foreground">
-                                  {conflict.judge?.display_name || conflict.judge?.email || "Juge anonyme"}
+                                  {conflict.judge?.display_name || "Juge anonyme"}
                                 </span>
                                 {conflict.judge?.organization && (
                                   <span className="text-sm text-muted-foreground">
