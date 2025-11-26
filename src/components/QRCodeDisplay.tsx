@@ -126,7 +126,7 @@ export const QRCodeDisplay = ({
             </DialogHeader>
             <div className="flex flex-col items-center gap-4 py-4">
               <div id={`qr-code-${entryId}`} className="bg-white p-4 rounded-lg border-2 border-border">
-                {QRCodeSVG && entryUrl ? (
+                {entryUrl ? (
                   <QRCodeSVG
                     value={entryUrl}
                     size={256}
@@ -177,12 +177,18 @@ export const QRCodeDisplay = ({
           </DialogHeader>
           <div className="flex flex-col items-center gap-4 py-4">
             <div id={`qr-code-${entryId}`} className="bg-white p-4 rounded-lg border-2 border-border">
-              <QRCodeSVG
-                value={entryUrl}
-                size={256}
-                level="M"
-                includeMargin={false}
-              />
+              {entryUrl ? (
+                <QRCodeSVG
+                  value={entryUrl}
+                  size={256}
+                  level="M"
+                  includeMargin={false}
+                />
+              ) : (
+                <div className="w-64 h-64 flex items-center justify-center text-muted-foreground">
+                  Impossible de générer le QR code
+                </div>
+              )}
             </div>
             <div className="flex flex-col items-center gap-2 w-full">
               <p className="text-xs text-muted-foreground text-center break-all px-4">

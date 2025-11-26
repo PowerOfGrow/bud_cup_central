@@ -14,6 +14,7 @@ import { LoadingState } from "@/components/LoadingState";
 import { CommentsSection } from "@/components/CommentsSection";
 import { ErrorState } from "@/components/ErrorState";
 import { QRCodeDisplay } from "@/components/QRCodeDisplay";
+import { OptimizedImage } from "@/components/OptimizedImage";
 
 const Vote = () => {
   const { entryId } = useParams<{ entryId: string }>();
@@ -190,6 +191,39 @@ const Vote = () => {
               </div>
             </CardHeader>
             <CardContent>
+              {/* Photo de la fleur */}
+              {entry.photo_url && (
+                <div className="mb-6 rounded-lg overflow-hidden border">
+                  <OptimizedImage
+                    src={entry.photo_url}
+                    alt={entry.strain_name}
+                    className="w-full h-auto max-h-96 object-contain bg-muted"
+                    lazy={false}
+                  />
+                </div>
+              )}
+
+              {/* Informations de la fiche */}
+              <div className="mb-6 grid gap-4 md:grid-cols-3">
+                <div className="bg-muted/40 rounded-xl p-4">
+                  <p className="text-sm text-muted-foreground mb-1">Profil Cannabinoïde</p>
+                  <p className="text-lg font-semibold text-foreground">
+                    THC {entry.thc_percent ?? "—"}% · CBD {entry.cbd_percent ?? "—"}%
+                  </p>
+                  {entry.terpene_profile && (
+                    <p className="text-xs text-muted-foreground mt-2 line-clamp-2">
+                      {entry.terpene_profile}
+                    </p>
+                  )}
+                </div>
+                {entry.description && (
+                  <div className="bg-muted/40 rounded-xl p-4 md:col-span-2">
+                    <p className="text-sm text-muted-foreground mb-1">Description</p>
+                    <p className="text-sm text-foreground">{entry.description}</p>
+                  </div>
+                )}
+              </div>
+
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="space-y-2">
                   <Label>Note (1-5 étoiles)</Label>
