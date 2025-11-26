@@ -160,7 +160,7 @@ const ModerateComments = () => {
       status,
       reason: moderationReason || undefined,
     });
-  });
+  };
 
   // Vérifier que l'utilisateur est organisateur (APRÈS tous les hooks)
   if (profile?.role !== "organizer") {
