@@ -43,9 +43,16 @@ export const useFavorites = (entryId?: string) => {
         .select("id")
         .eq("entry_id", entryId)
         .eq("user_id", user.id)
-        .single();
+        .maybeSingle();
 
-      if (error && error.code !== "PGRST116") throw error;
+      // maybeSingle() retourne null si aucun résultat, pas d'erreur
+      if (error) {
+        // Si l'erreur n'est pas "aucun résultat", on la log mais on retourne false
+        if (error.code !== "PGRST116") {
+          console.error("Error checking favorite:", error);
+        }
+        return false;
+      }
       return !!data;
     },
     enabled: !!entryId && !!user?.id,

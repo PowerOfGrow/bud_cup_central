@@ -46,6 +46,12 @@ const statusTone: Record<string, string> = {
 
 // Composant pour une carte d'entrée avec favoris et partage
 const EntryCard = ({ entry, profile }: { entry: any; profile: any }) => {
+  // Vérifier que entry.id existe avant de continuer
+  if (!entry?.id) {
+    console.error("EntryCard: entry.id is required but was undefined", entry);
+    return null;
+  }
+
   const { isFavorite, toggleFavorite, isToggling } = useFavorites(entry.id);
   
   // Récupérer le nombre de commentaires
@@ -223,7 +229,10 @@ const Contests = () => {
   const filteredAndSortedEntries = useMemo(() => {
     if (!entries) return [];
 
-    let filtered = [...entries];
+    // Filtrer d'abord les entrées qui ont un id valide
+    let filtered = entries.filter((entry) => entry && entry.id);
+
+    if (filtered.length === 0) return [];
 
     // Filtre par recherche
     if (searchQuery.trim()) {
@@ -563,9 +572,11 @@ const Contests = () => {
                 </Card>
 
                 {paginatedEntries.length ? (
-                  paginatedEntries.map((entry) => (
-                    <EntryCard key={entry.id} entry={entry} profile={profile} />
-                  ))
+                  paginatedEntries
+                    .filter((entry) => entry?.id) // S'assurer que l'id existe
+                    .map((entry) => (
+                      <EntryCard key={entry.id} entry={entry} profile={profile} />
+                    ))
                 ) : (
                   <Card className="border-dashed">
                     <CardContent className="py-12 text-center text-muted-foreground">
