@@ -30,6 +30,12 @@ export const QRCodeDisplay = ({
 }: QRCodeDisplayProps) => {
   const [isOpen, setIsOpen] = useState(false);
 
+  // Vérifier que entryId est défini
+  if (!entryId) {
+    console.error("QRCodeDisplay: entryId is required but was undefined");
+    return null;
+  }
+
   // Générer l'URL complète de l'entrée
   const entryUrl = `${window.location.origin}/vote/${entryId}`;
 
@@ -161,9 +167,8 @@ export const QRCodeDisplay = ({
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col items-center gap-4 py-4">
-            <div className="bg-white p-4 rounded-lg border-2 border-border">
+            <div id={`qr-code-${entryId}`} className="bg-white p-4 rounded-lg border-2 border-border">
               <QRCodeSVG
-                id={`qr-code-${entryId}`}
                 value={entryUrl}
                 size={256}
                 level="M"
