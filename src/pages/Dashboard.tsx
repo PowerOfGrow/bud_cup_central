@@ -1,5 +1,5 @@
 import React, { type ComponentType, useMemo } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -23,8 +23,21 @@ import { differenceInDays, differenceInHours } from "date-fns";
 import { AlertCircle } from "lucide-react";
 import { OnboardingWizard } from "@/components/OnboardingWizard";
 import { useOnboarding } from "@/hooks/use-onboarding";
-import { useState, useEffect } from "react";
+import { useState, useEffect, createContext, useContext } from "react";
 // Lazy load des bibliothèques lourdes uniquement pour OrganizerPanel
+
+// Contexte pour partager la fonction de changement d'onglet
+const DashboardTabContext = createContext<{
+  setActiveTab: (tab: string) => void;
+} | null>(null);
+
+const useDashboardTab = () => {
+  const context = useContext(DashboardTabContext);
+  if (!context) {
+    throw new Error('useDashboardTab must be used within Dashboard');
+  }
+  return context;
+};
 
 
 const StatCard = ({
@@ -618,6 +631,15 @@ const JudgePanel = () => {
 
 const OrganizerPanel = () => {
   const { data, isLoading, error } = useOrganizerAnalytics();
+  
+  // Accès au contexte pour changer d'onglet (peut ne pas exister si appelé hors contexte)
+  let setActiveTab: ((tab: string) => void) | undefined;
+  try {
+    const context = useDashboardTab();
+    setActiveTab = context?.setActiveTab;
+  } catch {
+    // Si le contexte n'existe pas, setActiveTab sera undefined
+  }
 
   const exportToCSV = () => {
     if (!data) return;
@@ -879,12 +901,19 @@ const OrganizerPanel = () => {
                 <span className="text-xs text-muted-foreground mt-1">Créer, modifier, supprimer</span>
               </Link>
             </Button>
-            <Button variant="outline" className="h-auto flex-col items-start justify-start p-4" asChild>
-              <Link to="/dashboard">
-                <BarChart3 className="h-5 w-5 mb-2" />
-                <span className="font-semibold">Analytics</span>
-                <span className="text-xs text-muted-foreground mt-1">Statistiques et rapports</span>
-              </Link>
+            <Button 
+              variant="outline" 
+              className="h-auto flex-col items-start justify-start p-4"
+              onClick={() => {
+                if (setActiveTab) {
+                  setActiveTab('organizer');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+              }}
+            >
+              <BarChart3 className="h-5 w-5 mb-2" />
+              <span className="font-semibold">Analytics</span>
+              <span className="text-xs text-muted-foreground mt-1">Statistiques et rapports</span>
             </Button>
             <Button variant="outline" className="h-auto flex-col items-start justify-start p-4" asChild>
               <Link to="/contests">
@@ -1097,6 +1126,7 @@ const Dashboard = () => {
   const { profile } = useAuth();
   const { shouldShowOnboarding, onboardingStatus, isLoading: isLoadingOnboarding } = useOnboarding();
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const navigate = useNavigate();
 
   // Afficher l'onboarding automatiquement si nécessaire
   useEffect(() => {
@@ -1119,6 +1149,22 @@ const Dashboard = () => {
         return "viewer";
     }
   }, [profile]);
+
+  // État pour contrôler l'onglet actif
+  const [activeTab, setActiveTab] = useState<string>(defaultTab);
+
+  // Réagir aux changements de defaultTab
+  useEffect(() => {
+    setActiveTab(defaultTab);
+  }, [defaultTab]);
+
+  // Réagir au hash de l'URL pour changer d'onglet
+  useEffect(() => {
+    const hash = window.location.hash.replace('#', '');
+    if (hash === 'analytics' || hash === 'organizer') {
+      setActiveTab('organizer');
+    }
+  }, []);
 
   // Déterminer quels onglets afficher selon le rôle
   const availableTabs = useMemo(() => {
@@ -1158,60 +1204,62 @@ const Dashboard = () => {
           </p>
         </div>
 
-        <Tabs defaultValue={defaultTab} className="space-y-10">
-          <TabsList className={`grid gap-2 bg-muted/40 ${
-            availableTabs.length === 4 
-              ? "grid-cols-2 md:grid-cols-4" 
-              : availableTabs.length === 3
-              ? "grid-cols-1 md:grid-cols-3"
-              : "grid-cols-1 md:grid-cols-2"
-          }`}>
+        <DashboardTabContext.Provider value={{ setActiveTab }}>
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-10">
+            <TabsList className={`grid gap-2 bg-muted/40 ${
+              availableTabs.length === 4 
+                ? "grid-cols-2 md:grid-cols-4" 
+                : availableTabs.length === 3
+                ? "grid-cols-1 md:grid-cols-3"
+                : "grid-cols-1 md:grid-cols-2"
+            }`}>
+              {availableTabs.includes("viewer") && (
+                <TabsTrigger value="viewer" className="data-[state=active]:bg-background">
+                  <Eye className="mr-2 h-4 w-4" /> Membre gratuit
+                </TabsTrigger>
+              )}
+              {availableTabs.includes("organizer") && (
+                <TabsTrigger value="organizer" className="data-[state=active]:bg-background">
+                  <BarChart3 className="mr-2 h-4 w-4" /> Analytics
+                </TabsTrigger>
+              )}
+              {availableTabs.includes("producer") && (
+                <TabsTrigger value="producer" className="data-[state=active]:bg-background">
+                  <Leaf className="mr-2 h-4 w-4" /> Producteur
+                </TabsTrigger>
+              )}
+              {availableTabs.includes("judge") && (
+                <TabsTrigger value="judge" className="data-[state=active]:bg-background">
+                  <Scale className="mr-2 h-4 w-4" /> Jury
+                </TabsTrigger>
+              )}
+            </TabsList>
+
             {availableTabs.includes("viewer") && (
-              <TabsTrigger value="viewer" className="data-[state=active]:bg-background">
-                <Eye className="mr-2 h-4 w-4" /> Membre gratuit
-              </TabsTrigger>
+              <TabsContent value="viewer">
+                <ViewerPanel />
+              </TabsContent>
             )}
+
             {availableTabs.includes("organizer") && (
-              <TabsTrigger value="organizer" className="data-[state=active]:bg-background">
-                <BarChart3 className="mr-2 h-4 w-4" /> Analytics
-              </TabsTrigger>
+              <TabsContent value="organizer">
+                <OrganizerPanel />
+              </TabsContent>
             )}
+
             {availableTabs.includes("producer") && (
-              <TabsTrigger value="producer" className="data-[state=active]:bg-background">
-                <Leaf className="mr-2 h-4 w-4" /> Producteur
-              </TabsTrigger>
+              <TabsContent value="producer">
+                <ProducerPanel />
+              </TabsContent>
             )}
+
             {availableTabs.includes("judge") && (
-              <TabsTrigger value="judge" className="data-[state=active]:bg-background">
-                <Scale className="mr-2 h-4 w-4" /> Jury
-              </TabsTrigger>
+              <TabsContent value="judge">
+                <JudgePanel />
+              </TabsContent>
             )}
-          </TabsList>
-
-          {availableTabs.includes("viewer") && (
-            <TabsContent value="viewer">
-              <ViewerPanel />
-            </TabsContent>
-          )}
-
-          {availableTabs.includes("organizer") && (
-            <TabsContent value="organizer">
-              <OrganizerPanel />
-            </TabsContent>
-          )}
-
-          {availableTabs.includes("producer") && (
-            <TabsContent value="producer">
-              <ProducerPanel />
-            </TabsContent>
-          )}
-
-          {availableTabs.includes("judge") && (
-            <TabsContent value="judge">
-              <JudgePanel />
-            </TabsContent>
-          )}
-        </Tabs>
+          </Tabs>
+        </DashboardTabContext.Provider>
       </div>
     </div>
   );

@@ -27,6 +27,7 @@ import { useRealtimeEntries } from "@/hooks/use-realtime-results";
 import { CategoryBadge } from "@/components/CategoryBadge";
 import { QRCodeDisplay } from "@/components/QRCodeDisplay";
 import { SocialShare } from "@/components/SocialShare";
+import { toast } from "sonner";
 
 const statusLabel: Record<string, string> = {
   registration: "Inscriptions ouvertes",
@@ -368,7 +369,16 @@ const Contests = () => {
                            <Button
                              variant={selectedContestId === contest.id ? "default" : "outline"}
                              className="flex-1"
-                             onClick={() => setSelectedContestId(contest.id)}
+                             onClick={() => {
+                               setSelectedContestId(contest.id);
+                               // Attendre un peu que le state se mette à jour, puis scroller
+                               setTimeout(() => {
+                                 const entriesSection = document.getElementById('entries-section');
+                                 if (entriesSection) {
+                                   entriesSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                 }
+                               }, 100);
+                             }}
                            >
                              Voir les entrées
                            </Button>
@@ -392,7 +402,7 @@ const Contests = () => {
         )}
 
         {selectedContest && (
-          <section className="mt-16">
+          <section id="entries-section" className="mt-16">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
               <div>
                 <p className="text-sm uppercase tracking-wide text-muted-foreground">Entrées officielles</p>
@@ -401,7 +411,40 @@ const Contests = () => {
                   {selectedContest.entriesCount} entrées validées — {selectedContest.judgesCount} jurés
                 </p>
               </div>
-              <Button variant="secondary" className="self-start md:self-auto">
+              <Button 
+                variant="secondary" 
+                className="self-start md:self-auto"
+                onClick={async () => {
+                  try {
+                    const guideUrl = 'https://www.gardeauarbres.fr/docs_cbd/guide_producteurs.pdf';
+                    
+                    // Télécharger le PDF depuis l'URL externe
+                    const response = await fetch(guideUrl);
+                    
+                    if (!response.ok) {
+                      throw new Error(`Erreur HTTP: ${response.status}`);
+                    }
+
+                    // Créer un blob à partir de la réponse
+                    const blob = await response.blob();
+                    
+                    // Créer un lien de téléchargement
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `guide-producteur-${selectedContest.name.replace(/[^a-z0-9]/gi, '_')}.pdf`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+
+                    toast.success('Guide producteur téléchargé avec succès');
+                  } catch (error) {
+                    console.error('Erreur lors du téléchargement du guide:', error);
+                    toast.error('Erreur lors du téléchargement du guide. Veuillez réessayer.');
+                  }
+                }}
+              >
                 Télécharger le guide producteur
               </Button>
             </div>
