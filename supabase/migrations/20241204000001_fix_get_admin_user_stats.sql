@@ -22,15 +22,8 @@ security definer
 set search_path = public, auth
 as $$
 begin
-  -- Vérifier que l'utilisateur est organisateur (méthode simplifiée)
-  if not exists (
-    select 1 from public.profiles
-    where id = auth.uid() and role = 'organizer'
-  ) then
-    raise exception 'Seuls les organisateurs peuvent accéder à cette fonction';
-  end if;
-  
-  -- Retourner les statistiques utilisateurs
+  -- Retourner les statistiques utilisateurs uniquement si l'utilisateur est organisateur
+  -- Si l'utilisateur n'est pas organisateur, la requête ne retournera rien (pas d'exception)
   return query
   select
     p.id,
@@ -99,6 +92,11 @@ begin
 
   from public.profiles p
   left join auth.users au on au.id = p.id
+  where exists (
+    select 1 from public.profiles organizer_check
+    where organizer_check.id = auth.uid() 
+      and organizer_check.role = 'organizer'
+  )
   order by p.created_at desc;
 end;
 $$;
