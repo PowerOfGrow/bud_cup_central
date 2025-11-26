@@ -1,8 +1,10 @@
--- Fix: Fonction SQL sécurisée pour les organisateurs pour récupérer les commentaires à modérer
--- Évite les problèmes de RLS avec les jointures complexes sur profiles
+-- Script SQL à copier-coller dans Supabase SQL Editor
+-- Crée la fonction get_pending_comments_for_organizer
 
+-- Supprimer la fonction si elle existe déjà
 drop function if exists public.get_pending_comments_for_organizer(text);
 
+-- Créer la fonction
 create or replace function public.get_pending_comments_for_organizer(
   p_status_filter text default 'pending'
 )
@@ -70,7 +72,9 @@ begin
 end;
 $$;
 
+-- Ajouter un commentaire
 comment on function public.get_pending_comments_for_organizer is 'Récupère les commentaires à modérer pour les organisateurs - Évite les problèmes de RLS avec les jointures complexes';
 
 -- Grant pour permettre l'exécution de la fonction (la fonction vérifie elle-même le rôle organisateur)
 grant execute on function public.get_pending_comments_for_organizer(text) to authenticated;
+
