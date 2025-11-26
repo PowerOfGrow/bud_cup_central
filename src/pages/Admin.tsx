@@ -74,8 +74,10 @@ import { toast } from "sonner";
 import { usePagination } from "@/hooks/use-pagination";
 import { PaginationControls } from "@/components/PaginationControls";
 import { COAViewer } from "@/components/COAViewer";
+import { useAuth } from "@/hooks/use-auth";
 
 const Admin = () => {
+  const { user: currentUser } = useAuth();
   const [roleFilter, setRoleFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [banDialogOpen, setBanDialogOpen] = useState(false);
@@ -564,7 +566,8 @@ const Admin = () => {
                                 Bannir
                               </Button>
                             )}
-                            {user.role !== "organizer" && (
+                            {/* Afficher le bouton Supprimer pour les non-organisateurs OU pour son propre compte organisateur */}
+                            {(user.role !== "organizer" || (user.role === "organizer" && user.id === currentUser?.id)) && (
                               <Button
                                 variant="destructive"
                                 size="sm"
