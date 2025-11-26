@@ -20,42 +20,45 @@ export const PaginationControls = ({
   onPageChange,
   className = "",
 }: PaginationControlsProps) => {
-  if (totalPages <= 1) return null;
+  // Safety check: ensure totalPages is a valid number
+  if (!totalPages || totalPages <= 1 || !Number.isFinite(totalPages)) return null;
 
   const getPageNumbers = () => {
     const pages: (number | "ellipsis")[] = [];
     const maxVisible = 5;
+    const safeTotalPages = Math.max(1, Math.floor(totalPages));
 
-    if (totalPages <= maxVisible) {
+    if (safeTotalPages <= maxVisible) {
       // Afficher toutes les pages
-      for (let i = 1; i <= totalPages; i++) {
+      for (let i = 1; i <= safeTotalPages; i++) {
         pages.push(i);
       }
     } else {
       // Afficher avec ellipsis
-      if (currentPage <= 3) {
+      const safeCurrentPage = Math.max(1, Math.min(currentPage, safeTotalPages));
+      if (safeCurrentPage <= 3) {
         // Début
         for (let i = 1; i <= 4; i++) {
           pages.push(i);
         }
         pages.push("ellipsis");
-        pages.push(totalPages);
-      } else if (currentPage >= totalPages - 2) {
+        pages.push(safeTotalPages);
+      } else if (safeCurrentPage >= safeTotalPages - 2) {
         // Fin
         pages.push(1);
         pages.push("ellipsis");
-        for (let i = totalPages - 3; i <= totalPages; i++) {
+        for (let i = safeTotalPages - 3; i <= safeTotalPages; i++) {
           pages.push(i);
         }
       } else {
         // Milieu
         pages.push(1);
         pages.push("ellipsis");
-        for (let i = currentPage - 1; i <= currentPage + 1; i++) {
+        for (let i = safeCurrentPage - 1; i <= safeCurrentPage + 1; i++) {
           pages.push(i);
         }
         pages.push("ellipsis");
-        pages.push(totalPages);
+        pages.push(safeTotalPages);
       }
     }
 
@@ -99,7 +102,7 @@ export const PaginationControls = ({
             variant="outline"
             size="sm"
             onClick={() => onPageChange(currentPage + 1)}
-            disabled={currentPage === totalPages}
+            disabled={currentPage >= totalPages}
           >
             Suivant
             <ChevronRight className="h-4 w-4 ml-1" />

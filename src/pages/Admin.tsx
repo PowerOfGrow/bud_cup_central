@@ -122,11 +122,9 @@ const Admin = () => {
   const {
     currentPage,
     totalPages,
-    paginatedItems,
+    paginatedData: paginatedItems,
     goToPage,
-    nextPage,
-    previousPage,
-  } = usePagination(filteredUsers, itemsPerPage);
+  } = usePagination({ data: filteredUsers, itemsPerPage });
 
   const handleBanUser = async () => {
     if (!selectedUser || !banReason) {
@@ -593,8 +591,6 @@ const Admin = () => {
                   currentPage={currentPage}
                   totalPages={totalPages}
                   onPageChange={goToPage}
-                  onNext={nextPage}
-                  onPrevious={previousPage}
                 />
               )}
             </TabsContent>
