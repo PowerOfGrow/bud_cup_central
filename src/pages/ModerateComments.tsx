@@ -59,66 +59,44 @@ const ModerateComments = () => {
   const [moderationReason, setModerationReason] = useState("");
   const [moderationAction, setModerationAction] = useState<"approve" | "reject" | "hide" | null>(null);
 
-  // Vérifier que l'utilisateur est organisateur
-  if (profile?.role !== "organizer") {
-    return (
-      <div className="min-h-screen">
-        <Header />
-        <div className="pt-28 pb-16">
-          <div className="container mx-auto px-4">
-            <ErrorState message="Accès réservé aux organisateurs" />
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Récupérer les commentaires en attente de modération
+  // Récupérer les commentaires via une fonction SQL sécurisée
+  // Utilise une fonction RPC pour éviter les problèmes de RLS avec les jointures complexes
   const { data: comments, isLoading, error } = useQuery({
     queryKey: ["pending-comments", statusFilter],
     queryFn: async () => {
-      let query = supabase
-        .from("entry_comments")
-        .select(`
-          *,
-          entry:entries!entry_comments_entry_id_fkey(
-            id,
-            strain_name,
-            contest_id,
-            contest:contests!entries_contest_id_fkey(id, name)
-          ),
-          user:profiles!entry_comments_user_id_fkey(id, display_name, avatar_url, organization)
-        `)
-        .in("status", statusFilter === "pending" ? ["pending", "hidden"] : ["pending", "approved", "rejected", "hidden"])
-        .order("created_at", { ascending: false });
-
-      const { data, error } = await query;
+      const { data, error } = await supabase.rpc("get_pending_comments_for_organizer", {
+        p_status_filter: statusFilter,
+      });
 
       if (error) throw error;
 
-      // Récupérer les signalements pour chaque commentaire
-      const commentsWithReports = await Promise.all(
-        (data || []).map(async (comment) => {
-          const { data: reports } = await supabase
-            .from("comment_reports")
-            .select("id")
-            .eq("comment_id", comment.id)
-            .eq("status", "pending");
-
-          return {
-            ...comment,
-            entry_name: (comment.entry as any)?.strain_name || "Entrée inconnue",
-            contest_id: (comment.entry as any)?.contest_id || "",
-            contest_name: ((comment.entry as any)?.contest as any)?.name || "Concours inconnu",
-            user_name: (comment.user as any)?.display_name || "Utilisateur",
-            user_organization: (comment.user as any)?.organization || null,
-            report_count: reports?.length || 0,
-          } as PendingComment;
-        })
-      );
-
-      return commentsWithReports;
+      // Transformer les données pour correspondre au format attendu par le reste du code
+      return (data || []).map((comment: any) => ({
+        ...comment,
+        entry: {
+          id: comment.entry_id,
+          strain_name: comment.entry_name,
+          contest_id: comment.contest_id,
+          contest: {
+            id: comment.contest_id,
+            name: comment.contest_name,
+          },
+        },
+        user: {
+          id: comment.user_id,
+          display_name: comment.user_name,
+          avatar_url: comment.user_avatar_url,
+          organization: comment.user_organization,
+        },
+        entry_name: comment.entry_name,
+        contest_id: comment.contest_id,
+        contest_name: comment.contest_name,
+        user_name: comment.user_name,
+        user_organization: comment.user_organization,
+        report_count: comment.report_count || 0,
+      } as PendingComment));
     },
+    enabled: profile?.role === "organizer", // Désactiver si pas organisateur
   });
 
   // Mutation pour modérer un commentaire
@@ -182,7 +160,21 @@ const ModerateComments = () => {
       status,
       reason: moderationReason || undefined,
     });
-  };
+  });
+
+  // Vérifier que l'utilisateur est organisateur (APRÈS tous les hooks)
+  if (profile?.role !== "organizer") {
+    return (
+      <div className="min-h-screen">
+        <Header />
+        <div className="pt-28 pb-16">
+          <div className="container mx-auto px-4">
+            <ErrorState message="Accès réservé aux organisateurs" />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (
