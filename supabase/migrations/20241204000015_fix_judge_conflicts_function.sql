@@ -3,7 +3,7 @@
 
 create or replace function public.get_judge_conflicts_for_organizer()
 returns table (
-  id uuid,
+  id bigint,
   contest_id uuid,
   judge_id uuid,
   judge_display_name text,
