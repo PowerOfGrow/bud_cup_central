@@ -15,46 +15,33 @@ import { PaginationControls } from "@/components/PaginationControls";
 const MonitorVotes = () => {
   const navigate = useNavigate();
 
-  // Récupérer les votes suspects depuis la table public_votes
-  // Note: La vue suspicious_votes existe mais pour des raisons de simplicité,
-  // on récupère les votes récents avec métadonnées et on les analyse
+  // Récupérer les votes suspects via une fonction SQL sécurisée
+  // Utilise une fonction RPC pour éviter les problèmes de RLS avec les jointures complexes
   const { data: suspiciousVotes, isLoading, error } = useQuery({
     queryKey: ["suspicious-votes"],
     queryFn: async () => {
-      // Récupérer tous les votes récents (7 derniers jours) avec leurs métadonnées
-      const sevenDaysAgo = new Date();
-      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-      
-      const { data: allVotes, error } = await supabase
-        .from("public_votes")
-        .select(`
-          *,
-          entry:entries!public_votes_entry_id_fkey(
-            id,
-            strain_name,
-            contest:contests!entries_contest_id_fkey(
-              id,
-              name
-            )
-          ),
-          voter:profiles!public_votes_voter_profile_id_fkey(
-            id,
-            display_name,
-            email
-          )
-        `)
-        .gte("created_at", sevenDaysAgo.toISOString())
-        .order("created_at", { ascending: false })
-        .limit(1000);
+      const { data, error } = await supabase.rpc("get_suspicious_votes_for_organizer", {
+        p_days_back: 7,
+      });
 
       if (error) throw error;
       
-      // Pour simplifier, on retourne tous les votes avec métadonnées de tracking
-      // Les votes sont déjà filtrés par rate limiting dans la fonction create_public_vote
-      // Ici, on affiche tous les votes récents avec leurs métadonnées pour analyse manuelle
-      // L'organisateur peut identifier visuellement les patterns suspects
-      
-      return allVotes || [];
+      // Transformer les données pour correspondre au format attendu par le reste du code
+      return (data || []).map((vote: any) => ({
+        ...vote,
+        entry: {
+          id: vote.entry_id,
+          strain_name: vote.entry_strain_name,
+          contest: {
+            id: vote.contest_id,
+            name: vote.contest_name,
+          },
+        },
+        voter: {
+          id: vote.voter_profile_id,
+          display_name: vote.voter_display_name,
+        },
+      }));
     },
   });
 
@@ -228,7 +215,7 @@ const MonitorVotes = () => {
                                   <Users className="h-4 w-4 text-muted-foreground" />
                                   <span className="text-muted-foreground">Utilisateur:</span>
                                   <span className="font-medium">
-                                    {vote.voter?.display_name || vote.voter?.email || "Anonyme"}
+                                    {vote.voter?.display_name || "Anonyme"}
                                   </span>
                                 </div>
                                 <div className="flex items-center gap-2">
