@@ -82,14 +82,21 @@ export async function getCOASignedUrl(
 
     if (signedUrl) {
       // Logger le téléchargement (en arrière-plan, ne bloque pas si ça échoue)
-      supabase.rpc("log_coa_download", {
-        p_entry_id: entryId,
-        p_file_path: filePath,
-        p_bucket_id: "entry-documents",
-      }).catch((err) => {
-        console.error("Error logging COA download:", err);
+      try {
+        const { error: logError } = await supabase.rpc("log_coa_download", {
+          p_entry_id: entryId,
+          p_file_path: filePath,
+          p_bucket_id: "entry-documents",
+        });
+        
+        if (logError) {
+          console.error("Error logging COA download:", logError);
+          // On continue même si le logging échoue
+        }
+      } catch (logErr) {
+        console.error("Error logging COA download:", logErr);
         // On continue même si le logging échoue
-      });
+      }
     }
 
     return signedUrl;
